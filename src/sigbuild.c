@@ -10,6 +10,7 @@
 
 #include "core.h"
 #include "cli_parser.h"
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -22,6 +23,9 @@ CLIState cli_state = NULL;   // Global variable to hold the current CLI state
 BuildContext context = NULL; // Global variable to hold the current build context
 
 void cli_init(int, char **);
+void cli_init_context(void);
+void cli_run(void);
+static void cli_cleanup(void);
 
 static void log_message(FILE *, const char *, va_list);
 static void log_debug(DebugLevel, const char *, ...);
@@ -32,7 +36,7 @@ void fwritelnf(FILE *, const char *, ...);
 void fdebugf(FILE *, LogLevel, DebugLevel, const char *, ...);
 
 // For dynamic log level annotation
-static const char *DBG_LEVELS[] = {
+static const char *DEBUGG_LEVELS[] = {
     "DEBUG",
     "INFO",
     "WARNING",
@@ -53,7 +57,15 @@ void get_timestamp(char *buffer, const char *format)
 // This function initializes the CLI state with the provided arguments
 void cli_init(int argc, char **args)
 {
-   // initialize the CLI state
+   // Register the cleanup function to be called on exit
+   if (atexit(cli_cleanup) != 0)
+   {
+      perror("Failed to register cleanup function");
+      exit(EXIT_FAILURE);
+   }
+
+   // initialize the CLI context & state
+   cli_init_context();
    cli_state = (CLIState)malloc(sizeof(struct cli_state_s));
    if (!cli_state)
    {
@@ -70,7 +82,7 @@ void cli_init(int argc, char **args)
       exit(EXIT_FAILURE);
    }
    cli_state->options->show_help = 0;
-   cli_state->options->show_version = 0;
+   cli_state->options->show_about = 0;
    cli_state->options->config_file = NULL;     // No config file by default
    cli_state->options->log_level = LOG_NORMAL; // Default log level
    cli_state->options->debug_level = DBG_INFO; // Default debug level
@@ -99,6 +111,55 @@ void cli_init(int argc, char **args)
          break;
       }
       exit(EXIT_FAILURE);
+   }
+   // Update build context with the parsed options
+}
+// This function initializes the build context with default values
+void cli_init_context(void)
+{
+   // Allocate memory for the build context
+   context = (BuildContext)malloc(sizeof(struct build_context_s));
+   if (!context)
+   {
+      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for build context.\n");
+      exit(EXIT_FAILURE);
+   }
+
+   // Initialize the build context with default values
+   context->log_level = LOG_NONE;           // Default log level is NONE
+   context->debug_level = DBG_INFO;         // Default debug level is INFO
+   context->log_stream = stdout;            // Default log stream is stdout
+   context->current_target = NULL;          // No current target by default
+   context->project_name = SIGMABUILD_NAME; // Default project name
+   context->current_configuration = NULL;   // No current configuration by default
+   context->data = NULL;                    // No additional data by default
+}
+// Run the build application
+void cli_run(void)
+{
+   writelnf("Starting Sigma.Build");
+}
+// Get the error message for a given CLIErrorCode
+const char *cli_get_err_msg(CLIErrorCode code)
+{
+   switch (code)
+   {
+   case CLI_SUCCESS:
+      return "No error";
+   case CLI_ERROR_PARSE_INVALID_ARG:
+      return "Invalid argument provided";
+   case CLI_ERROR_PARSE_MISSING_OPTION:
+      return "Required option is missing";
+   case CLI_ERROR_PARSE_INVALID_CONFIG:
+      return "Invalid or NULL configuration file specified";
+   case CLI_ERROR_PARSE_MISSING_CONFIG:
+      return "Configuration file is missing";
+   case CLI_ERROR_PARSE_UNKNOWN_OPTION:
+      return "Unknown option provided";
+   case CLI_ERROR_PARSE_FAILED:
+      return "Failed to parse command line arguments";
+   default:
+      return "Unknown error code";
    }
 }
 
@@ -159,7 +220,7 @@ void fwritelnf(FILE *stream, const char *fmt, ...)
 // Debug logging function
 void fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const char *fmt, ...)
 {
-   if (log_level == LOG_NONE)
+   if ((log_level == LOG_NONE || context->log_level == LOG_NONE) && debug_level < DBG_ERROR)
    {
       return; // No output for NONE
    }
@@ -167,51 +228,55 @@ void fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const cha
    va_list args;
    va_start(args, fmt);
 
-   if (log_level == LOG_NORMAL)
+   // build the label
+   char dbg_label[16] = "[UNKNOWN]";
+   if (debug_level >= 0 && debug_level < sizeof(DEBUGG_LEVELS))
    {
-      char dbg_label[16];
-      char dbg_msg[256];
-      if (debug_level > DBG_INFO)
-      {
-         // Only ERROR+ for LOG_MINIMAL: add debug label based on debug level
-         if (debug_level >= DBG_ERROR)
-         {
-            snprintf(dbg_label, sizeof(dbg_label), "[%s]", DBG_LEVELS[debug_level]);
-         }
-         else
-         {
-            // debug label unknown
-            snprintf(dbg_label, sizeof(dbg_label), "[UNKNOWN]");
-         }
-
-         // prepend label to message
-         snprintf(dbg_msg, sizeof(dbg_msg), "%-10s %s", dbg_label, fmt);
-         log_message(stream, dbg_msg, args);
-      }
-      else
-      {
-         // Minimal: No debug label
-         log_message(stream, fmt, args);
-      }
+      snprintf(dbg_label, sizeof(dbg_label), "[%s]", DEBUGG_LEVELS[debug_level]);
    }
-   else if (log_level == LOG_VERBOSE && debug_level >= context->debug_level)
+   //  build the message
+   char msg[1024];
+   if (log_level == LOG_NORMAL && context->log_level != LOG_VERBOSE)
    {
-      char dbg_label[16];
-      char dbg_msg[16];
-      if (debug_level >= 0 && debug_level < sizeof(DBG_LEVELS) / sizeof(DBG_LEVELS[0]) - 1)
-      {
-         snprintf(dbg_label, sizeof(dbg_label), "[%s]", DBG_LEVELS[debug_level]);
-      }
-      else
-      {
-         snprintf(dbg_label, sizeof(dbg_label), "[UNKNOWN]");
-      }
-      // prepend label to message
-      snprintf(dbg_msg, sizeof(dbg_msg), "%-10s %s", dbg_label, fmt);
-      log_message(stream, dbg_msg, args);
+      // no debug label
+      snprintf(msg, sizeof(msg), "%s", fmt);
+   }
+   else
+   {
+      // apply debug label
+      snprintf(msg, sizeof(msg), "%-10s %s", dbg_label, fmt);
+   }
+
+   if (log_level != LOG_NONE && log_level >= context->log_level && debug_level >= context->debug_level)
+   {
+      //  only log if not NON and at or above context log && debug levels
+      log_message(stream, msg, args);
+   }
+   else if (context->log_level == LOG_VERBOSE)
+   {
+      // log everything according to cli options
+      log_message(stream, msg, args);
    }
 
    va_end(args);
+}
+
+// Cleanup function to free resources allocated during the CLI initialization
+static void cli_cleanup(void)
+{
+   if (cli_state)
+   {
+      if (cli_state->options)
+      {
+         free(cli_state->options);
+      }
+      free(cli_state);
+   }
+   if (context)
+   {
+      // Free any resources allocated in the context
+      free(context);
+   }
 }
 
 // Global logger instance
@@ -225,6 +290,7 @@ const ILogger Logger = {
 // Global application instance
 const IApplication App = {
     .init = cli_init,
-    .run = NULL,     // To be set by the application
-    .cleanup = NULL, // To be set by the application
+    .run = cli_run,
+    .cleanup = cli_cleanup,
+    .get_err_msg = cli_get_err_msg,
 };

@@ -13,7 +13,6 @@
 
 int main(int argc, char **argv)
 {
-   // we need to register a `clean_up` function to free the CLI state and context on exit.
 
    return 0;
 }

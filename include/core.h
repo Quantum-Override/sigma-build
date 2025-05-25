@@ -65,19 +65,21 @@ typedef enum
    // Parser Error Codes
    CLI_ERROR_PARSE_INVALID_ARG = 1001, // Invalid argument provided
    CLI_ERROR_PARSE_MISSING_OPTION,     // Required option is missing
+   CLI_ERROR_PARSE_INVALID_CONFIG,     // Invalid or NULL configuration file specified
+   CLI_ERROR_PARSE_MISSING_CONFIG,     // Configuration file is missing
    CLI_ERROR_PARSE_UNKNOWN_OPTION,     // Unknown option provided
    CLI_ERROR_PARSE_FAILED,             // Failed to parse command line arguments
 } CLIErrorCode;
 /**
  * @brief CLI options structure.
  * @details This structure holds the options parsed from the command line arguments.
- *          It includes flags for showing help, version information, and any custom
+ *          It includes flags for showing help, about information, and any custom
  *          options that may be specified by the user.
  */
 typedef struct cli_options_s
 {
    int show_help;          // Flag to indicate if help should be displayed
-   int show_version;       // Flag to indicate if version information should be displayed
+   int show_about;         // Flag to indicate if about information should be displayed
    string config_file;     // Path to the configuration file
    LogLevel log_level;     // Logging level for the application
    DebugLevel debug_level; // Debug level for the application
@@ -180,6 +182,12 @@ typedef struct IApplication
     * @brief Cleans up resources used by the application
     */
    void (*cleanup)(void);
+   /**
+    * @brief Gets the message for a given CLI error code
+    * @param code :the CLI error code
+    * @return :the error message corresponding to the CLI error code
+    */
+   const char *(*get_err_msg)(CLIErrorCode);
 } IApplication;
 
 /**
