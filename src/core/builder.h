@@ -21,6 +21,17 @@ struct build_target_s; // Forward declaration of BuildTarget structure
 
 typedef struct build_target_s *BuildTarget; // BuildTarget is a pointer to the build_target_s structure
 
+typedef struct build_target_s
+{
+   string name;      // Name of the build target
+   string type;      // Type of the build target (e.g., executable, library)
+   string *sources;  // Array of source files for the build targets
+   string build_dir; // Directory where the build output will be placed
+   string compiler;  // Compiler to use for building the target
+   string *c_flags;  // Array of compiler flags for the target
+   string *ld_flags; // Array of linker flags for the target
+};
+
 /**
  * @brief IBuilder interface.
  * @details Provides an interface for building the application from the command line interface.

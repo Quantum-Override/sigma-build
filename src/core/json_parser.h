@@ -17,10 +17,19 @@
 #define JSON_PARSER_H
 
 #include "core.h"
+#include "builder.h"
 
 struct build_config_s; // Forward declaration of build_config_s structure
 
 typedef struct build_config_s *BuildConfig; // BuildConfig is a pointer to the build_config_s structure
+
+typedef struct build_config_s
+{
+   string name;          // Name of the build configuration
+   string log_file;      // Log file for the build configuration
+   BuildTarget *targets; // Array of build targets for the configuration
+   string *variables;    // Array of key-value pairs for configuration variables
+} build_config_s;
 
 /**
  * @brief IParser interface.
