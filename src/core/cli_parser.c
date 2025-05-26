@@ -16,6 +16,7 @@
 #define OPT_SHOW_ABOUT "--about"   // Option to show version information
 #define OPT_CONFIG_FILE "--config" // Option to specify a configuration file
 #define OPT_LOG_LEVEL "--log="     // Option to set the log level (0-2)
+#define OPT_LOG_VERBOSE "-v"       // Option for verbose logging (only observed with --about && --help
 
 void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *error)
 {
@@ -33,10 +34,8 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          // zero out other options
          opts->show_help = 0;          // Reset help flag
          opts->config_file = NULL;     // Reset config file
-         opts->log_level = LOG_NORMAL; // Reset log level to default
+         opts->log_level = LOG_NONE;   // Reset log level to default
          opts->debug_level = DBG_INFO; // Reset debug level to default
-
-         return;
       }
       else if (strcmp(argv[i], OPT_SHOW_ABOUT) == 0)
       {
@@ -47,10 +46,8 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          // zero out other options
          opts->show_help = 0;          // Reset help flag
          opts->config_file = NULL;     // Reset config file
-         opts->log_level = LOG_NORMAL; // Reset log level to default
+         opts->log_level = LOG_NONE;   // Reset log level to default
          opts->debug_level = DBG_INFO; // Reset debug level to default
-
-         return;
       }
       else if (strncmp(argv[i], OPT_LOG_LEVEL, strlen(OPT_LOG_LEVEL)) == 0)
       {
@@ -66,6 +63,11 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          }
 
          opts->log_level = (LogLevel)level; // Set the log level
+      }
+      else if (strcmp(argv[i], OPT_LOG_VERBOSE) == 0)
+      {
+         // Set the log level to verbose
+         opts->is_verbose = 1; // Set log level to verbose
       }
       else if (strncmp(argv[i], OPT_CONFIG_FILE, strlen(OPT_CONFIG_FILE)) == 0)
       {

@@ -24,8 +24,10 @@ BuildContext context = NULL; // Global variable to hold the current build contex
 
 void cli_init(int, char **);
 void cli_init_context(void);
+int cli_load_config(void);
 void cli_run(void);
 static void cli_cleanup(void);
+const char *cli_get_err_msg(CLIErrorCode);
 
 static void log_message(FILE *, const char *, va_list);
 static void log_debug(DebugLevel, const char *, ...);
@@ -36,7 +38,7 @@ void fwritelnf(FILE *, const char *, ...);
 void fdebugf(FILE *, LogLevel, DebugLevel, const char *, ...);
 
 // For dynamic log level annotation
-static const char *DEBUGG_LEVELS[] = {
+static const char *DEBUG_LEVELS[] = {
     "DEBUG",
     "INFO",
     "WARNING",
@@ -92,27 +94,18 @@ void cli_init(int argc, char **args)
    if (cli_state->error != CLI_SUCCESS)
    {
       // Handle parsing errors
-      switch (cli_state->error)
-      {
-      case CLI_ERROR_PARSE_INVALID_ARG:
-         fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid argument provided.\n");
-         break;
-      case CLI_ERROR_PARSE_MISSING_OPTION:
-         fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Required option is missing.\n");
-         break;
-      case CLI_ERROR_PARSE_UNKNOWN_OPTION:
-         fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Unknown option provided.\n");
-         break;
-      case CLI_ERROR_PARSE_FAILED:
-         fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to parse command line arguments.\n");
-         break;
-      default:
-         fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "An unknown error occurred during parsing.\n");
-         break;
-      }
+      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Error parsing command line arguments: %s\n",
+              cli_get_err_msg(cli_state->error));
       exit(EXIT_FAILURE);
    }
    // Update build context with the parsed options
+   context->log_level = cli_state->options->log_level;                     // Set log level from options
+   context->debug_level = cli_state->options->debug_level;                 // Set debug level from options
+   context->log_stream = cli_state->options->is_verbose ? stdout : stderr; // Set log stream based on verbosity
+   context->project_name = SIGMABUILD_NAME;                                // Set default project name
+   context->current_target = NULL;                                         // No current target by default
+   context->current_configuration = cli_state->options->config_file;       // Set current configuration from options
+   context->data = NULL;                                                   // No additional data by default
 }
 // This function initializes the build context with default values
 void cli_init_context(void)
@@ -134,11 +127,50 @@ void cli_init_context(void)
    context->current_configuration = NULL;   // No current configuration by default
    context->data = NULL;                    // No additional data by default
 }
+int cli_load_config(void)
+{
+   writelnf("Loading configuration file: %s", cli_state->options->config_file ? cli_state->options->config_file : "None");
+   if (cli_state->options->config_file == NULL)
+   {
+      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file is missing.\n");
+      return CLI_ERROR_PARSE_MISSING_CONFIG; // Return error if config file is missing
+   }
+   // Here you would typically load the configuration file
+   // For now, we just simulate a successful load
+   if (strcmp(cli_state->options->config_file, "invalid.json") == 0)
+   {
+      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid configuration file specified: %s\n", cli_state->options->config_file);
+      return CLI_ERROR_PARSE_INVALID_CONFIG; // Return error if config file is invalid
+   }
+
+   // If the configuration file is valid, we can proceed
+   writelnf("Configuration file loaded successfully: %s", cli_state->options->config_file);
+
+   return CLI_SUCCESS; // Return success if config file is loaded successfully
+}
 // Run the build application
 void cli_run(void)
 {
    writelnf("Starting Sigma.Build");
 }
+// Cleanup function to free resources allocated during the CLI initialization
+static void cli_cleanup(void)
+{
+   if (cli_state)
+   {
+      if (cli_state->options)
+      {
+         free(cli_state->options);
+      }
+      free(cli_state);
+   }
+   if (context)
+   {
+      // Free any resources allocated in the context
+      free(context);
+   }
+}
+
 // Get the error message for a given CLIErrorCode
 const char *cli_get_err_msg(CLIErrorCode code)
 {
@@ -158,8 +190,24 @@ const char *cli_get_err_msg(CLIErrorCode code)
       return "Unknown option provided";
    case CLI_ERROR_PARSE_FAILED:
       return "Failed to parse command line arguments";
+   case JSON_ERROR_INVALID_FORMAT:
+      return "Invalid JSON format";
+   case JSON_ERROR_MISSING_FIELD:
+      return "Required field is missing in JSON";
+   case JSON_ERROR_INVALID_FIELD:
+      return "Invalid field in JSON";
+   case JSON_ERROR_UNKNOWN_FIELD:
+      return "Unknown field in JSON";
+   case JSON_ERROR_PARSE_FAILED:
+      return "Failed to parse JSON";
+   case JSON_ERROR_FILE_NOT_FOUND:
+      return "JSON file not found";
+   case JSON_ERROR_FILE_READ:
+      return "Error reading JSON file";
+   case JSON_ERROR_FILE_EMPTY:
+      return "Empty JSON file";
    default:
-      return "Unknown error code";
+      return "Unknown error code"; // Default case for unknown error codes
    }
 }
 
@@ -220,6 +268,7 @@ void fwritelnf(FILE *stream, const char *fmt, ...)
 // Debug logging function
 void fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const char *fmt, ...)
 {
+   // Suppress non-error messages if context or caller specify LOG_NONE.
    if ((log_level == LOG_NONE || context->log_level == LOG_NONE) && debug_level < DBG_ERROR)
    {
       return; // No output for NONE
@@ -228,55 +277,29 @@ void fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const cha
    va_list args;
    va_start(args, fmt);
 
-   // build the label
+   // build debug label
    char dbg_label[16] = "[UNKNOWN]";
-   if (debug_level >= 0 && debug_level < sizeof(DEBUGG_LEVELS))
+   if (debug_level >= 0 && debug_level < sizeof(DEBUG_LEVELS) / sizeof(DEBUG_LEVELS[0]) - 1)
    {
-      snprintf(dbg_label, sizeof(dbg_label), "[%s]", DEBUGG_LEVELS[debug_level]);
+      snprintf(dbg_label, sizeof(dbg_label), "[%s]", DEBUG_LEVELS[debug_level]);
    }
    //  build the message
    char msg[1024];
-   if (log_level == LOG_NORMAL && context->log_level != LOG_VERBOSE)
-   {
-      // no debug label
-      snprintf(msg, sizeof(msg), "%s", fmt);
-   }
-   else
-   {
-      // apply debug label
-      snprintf(msg, sizeof(msg), "%-10s %s", dbg_label, fmt);
-   }
+   int use_label = (log_level == LOG_VERBOSE || context->log_level == LOG_VERBOSE || debug_level >= DBG_ERROR);
+   snprintf(msg, sizeof(msg), use_label ? "%-10s %s" : "%s", use_label ? dbg_label : "", fmt);
 
-   if (log_level != LOG_NONE && log_level >= context->log_level && debug_level >= context->debug_level)
+   // Log if:
+   // 1. context->log_level == LOG_VERBOSE (log everything)
+   // 2. log_level != LOG_NONE && log_level >= context->log_level && debug_level >= context->debug_level
+   // 3. debug_level >= DBG_ERROR (always log errors)
+   if (context->log_level == LOG_VERBOSE ||
+       (log_level != LOG_NONE && log_level >= context->log_level && debug_level >= context->debug_level) ||
+       debug_level >= DBG_ERROR)
    {
-      //  only log if not NON and at or above context log && debug levels
-      log_message(stream, msg, args);
-   }
-   else if (context->log_level == LOG_VERBOSE)
-   {
-      // log everything according to cli options
       log_message(stream, msg, args);
    }
 
    va_end(args);
-}
-
-// Cleanup function to free resources allocated during the CLI initialization
-static void cli_cleanup(void)
-{
-   if (cli_state)
-   {
-      if (cli_state->options)
-      {
-         free(cli_state->options);
-      }
-      free(cli_state);
-   }
-   if (context)
-   {
-      // Free any resources allocated in the context
-      free(context);
-   }
 }
 
 // Global logger instance

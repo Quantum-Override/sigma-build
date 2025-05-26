@@ -1,11 +1,11 @@
 /* include/core.h: Core header file for the project
-
-   This file includes standard libraries and project-specific headers.
-
-   David Boarman
-   2025-05-25
-
-   SIGMABUILD_VERSION "0.00.01"
+ *
+ * David Boarman
+ * 2025-05-25
+ *
+ * SIGMABUILD_VERSION "0.00.01"
+ *
+ * This file includes standard libraries and project-specific headers.
  */
 #ifndef CORE_H
 #define CORE_H
@@ -62,13 +62,22 @@ typedef enum
 typedef enum
 {
    CLI_SUCCESS = 0, // No error
-   // Parser Error Codes
+   // CLI Parser Error Codes
    CLI_ERROR_PARSE_INVALID_ARG = 1001, // Invalid argument provided
    CLI_ERROR_PARSE_MISSING_OPTION,     // Required option is missing
    CLI_ERROR_PARSE_INVALID_CONFIG,     // Invalid or NULL configuration file specified
    CLI_ERROR_PARSE_MISSING_CONFIG,     // Configuration file is missing
    CLI_ERROR_PARSE_UNKNOWN_OPTION,     // Unknown option provided
    CLI_ERROR_PARSE_FAILED,             // Failed to parse command line arguments
+   // JSON Parser Error Codes
+   JSON_ERROR_INVALID_FORMAT = 2001, // Invalid JSON format
+   JSON_ERROR_MISSING_FIELD,         // Required field is missing in JSON
+   JSON_ERROR_INVALID_FIELD,         // Invalid field in JSON
+   JSON_ERROR_UNKNOWN_FIELD,         // Unknown field in JSON
+   JSON_ERROR_PARSE_FAILED,          // Failed to parse JSON
+   JSON_ERROR_FILE_NOT_FOUND,        // JSON file not found
+   JSON_ERROR_FILE_READ,             // Error reading JSON file
+   JSON_ERROR_FILE_EMPTY,            // Empty JSON file
 } CLIErrorCode;
 /**
  * @brief CLI options structure.
@@ -83,6 +92,7 @@ typedef struct cli_options_s
    string config_file;     // Path to the configuration file
    LogLevel log_level;     // Logging level for the application
    DebugLevel debug_level; // Debug level for the application
+   int is_verbose;         // Flag for verbose logging (only observed with --about && --help)
 } cli_options_s;
 /**
  * @brief CLI state structure.
@@ -174,6 +184,15 @@ typedef struct IApplication
     * @param argv :the command line arguments
     */
    void (*init)(int, char **);
+   /**
+    * @brief Load the configuration file for the application
+    * @return :0 on success, non-zero on failure
+    * @details This function loads the configuration file specified in the command line
+    *          options. If no configuration file is specified, it uses a default configuration.
+    *          If the configuration file is invalid or cannot be loaded, it returns an error code.
+    *          The configuration file is expected to be in JSON format.
+    */
+   int (*load_config)(void);
    /**
     * @brief Runs the application with the given context
     */
