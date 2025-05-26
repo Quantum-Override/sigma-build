@@ -14,12 +14,6 @@
 
 #define JSON_PARSER_VERSION "0.00.01"
 
-struct build_config_s
-{
-   string name;
-   string log_file;
-};
-
 BuildConfig parser_build_config(const char *filename)
 {
    Logger.fwriteln(stderr, "JSON Parser: Parsing file %s", filename);
@@ -49,7 +43,7 @@ void parser_dispose_config(BuildConfig config)
    }
 }
 
-const struct IParser JParse = {
+const IParser JParse = {
     .parse = parser_build_config,     // Initialize the parse function to NULL
     .dispose = parser_dispose_config, // Dispose of the build configuration
 };

@@ -20,10 +20,14 @@ typedef char *string; // String type for character arrays
 struct cli_state_s;     // Forward declaration of CLIState structure
 struct cli_options_s;   // Forward declaration of CLIOptions structure
 struct build_context_s; // Forward declaration of BuildContext structure
+struct build_config_s;  // Forward declaration of build_config_s structure
+struct build_target_s;  // Forward declaration of BuildTarget structure
 
 typedef struct cli_state_s *CLIState;         // CLIState is the structure that holds the state of the command line interface
 typedef struct cli_options_s *CLIOptions;     // CLIOptions is the structure that holds the command line options
 typedef struct build_context_s *BuildContext; // BuildContext is the structure that holds the build context for the application
+typedef struct build_config_s *BuildConfig;   // BuildConfig is a pointer to the build_config_s structure
+typedef struct build_target_s *BuildTarget;   // BuildTarget is a pointer to the build_target_s structure
 
 /**
  * @brief Enumeration for log levels.
@@ -78,6 +82,9 @@ typedef enum
    JSON_ERROR_FILE_NOT_FOUND,        // JSON file not found
    JSON_ERROR_FILE_READ,             // Error reading JSON file
    JSON_ERROR_FILE_EMPTY,            // Empty JSON file
+   JSON_LOAD_CONFIG_FAILED,          // Failed to load configuration file
+   // Builder Error Codes
+   BUILD_TARGET_FAILED = 3001, // Build failed
 } CLIErrorCode;
 /**
  * @brief CLI options structure.
@@ -93,6 +100,7 @@ typedef struct cli_options_s
    LogLevel log_level;     // Logging level for the application
    DebugLevel debug_level; // Debug level for the application
    int is_verbose;         // Flag for verbose logging (only observed with --about && --help)
+   FILE *log_stream;       // Stream for logging output
 } cli_options_s;
 /**
  * @brief CLI state structure.
@@ -184,15 +192,6 @@ typedef struct IApplication
     * @param argv :the command line arguments
     */
    void (*init)(int, char **);
-   /**
-    * @brief Load the configuration file for the application
-    * @return :0 on success, non-zero on failure
-    * @details This function loads the configuration file specified in the command line
-    *          options. If no configuration file is specified, it uses a default configuration.
-    *          If the configuration file is invalid or cannot be loaded, it returns an error code.
-    *          The configuration file is expected to be in JSON format.
-    */
-   int (*load_config)(void);
    /**
     * @brief Runs the application with the given context
     */

@@ -1,5 +1,6 @@
 {
    "files.associations": {
-      "cli_parser.h": "c"
+      "cli_parser.h": "c",
+      "core.h": "c"
    }
 }

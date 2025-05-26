@@ -19,10 +19,6 @@
 #include "core.h"
 #include "builder.h"
 
-struct build_config_s; // Forward declaration of build_config_s structure
-
-typedef struct build_config_s *BuildConfig; // BuildConfig is a pointer to the build_config_s structure
-
 typedef struct build_config_s
 {
    string name;          // Name of the build configuration
@@ -40,6 +36,12 @@ typedef struct build_config_s
 typedef struct IParser
 {
    /**
+    * @brief Get the version of the JSON parser.
+    * @return :a string representing the version of the JSON parser
+    * @details This function returns the version of the JSON parser being used.
+    */
+   const char *(*get_version)(void);
+   /**
     * @brief Parses a JSON file and returns the build configuration.
     * @param filename :the name of the JSON file to parse
     * @return :a pointer to the BuildConfig structure containing the parsed configuration
@@ -48,6 +50,6 @@ typedef struct IParser
    void (*dispose)(BuildConfig);
 } IParser;
 
-extern struct IParser JParse; // Global JSON parser instance
+extern const IParser JParse; // Global JSON parser instance
 
 #endif // JSON_PARSER_H

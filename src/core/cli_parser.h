@@ -16,12 +16,29 @@
 
 #include "core.h"
 
+#define OPT_SHOW_HELP "--help"     // Option to show help
+#define OPT_SHOW_ABOUT "--about"   // Option to show version information
+#define OPT_CONFIG_FILE "--config" // Option to specify a configuration file
+#define OPT_LOG_LEVEL "--log="     // Option to set the log level (0-2)
+#define OPT_LOG_VERBOSE "-v"       // Option for verbose logging (only observed with --about && --help)
+
 /**
  * @brief CLIOptions structure.
  * @details Provides an interface for parsing command line options.
  */
 typedef struct ICLI
 {
+   /**
+    * @brief Get the version of the CLI parser.
+    * @return :the version of the CLI parser as a string
+    * @details This function returns the version of the CLI parser.
+    */
+   const char *(*get_version)(void); // Function to get the version of the CLI parser
+   /**
+    * @brief Initializes the CLI parser with command line arguments.
+    * @param argc :the number of command line arguments
+    * @param argv :the command line arguments
+    */
    void (*parse_args)(int argc, char **, CLIOptions *, CLIErrorCode *); // Function to parse command line arguments
 } ICLI;
 

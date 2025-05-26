@@ -17,10 +17,6 @@
 
 #include "core.h"
 
-struct build_target_s; // Forward declaration of BuildTarget structure
-
-typedef struct build_target_s *BuildTarget; // BuildTarget is a pointer to the build_target_s structure
-
 typedef struct build_target_s
 {
    string name;      // Name of the build target
@@ -30,7 +26,7 @@ typedef struct build_target_s
    string compiler;  // Compiler to use for building the target
    string *c_flags;  // Array of compiler flags for the target
    string *ld_flags; // Array of linker flags for the target
-};
+} build_target_s;
 
 /**
  * @brief IBuilder interface.
@@ -41,11 +37,19 @@ typedef struct build_target_s
 typedef struct IBuilder
 {
    /**
+    * @brief Gets the version of the builder.
+    * @return :the version of the builder as a string
+    * @details This function returns the version of the builder.
+    */
+   const char *(*get_version)(void); // Function to get the version of the builder
+   /**
     * @brief Builds the application for the specified target.
     * @param target :the build target to build the application for
     * @return :0 on success, non-zero on failure
     */
    int (*build)(BuildTarget);
 } IBuilder;
+
+extern const IBuilder Builder; // Global Builder instance
 
 #endif // BUILDER_H

@@ -1,0 +1,130 @@
+{
+   "version": "2.0.0",
+   "tasks": [
+      {
+         "label": "build debug",
+         "type": "shell",
+         "command": "gcc",
+         "args": [
+            "-g",
+            "-Wall",
+            "-O0",
+            "-c",
+            "src/core/cli_parser.c",
+            "-o",
+            "test/build/cli_parser.o",
+            "-Iinclude"
+         ],
+         "group": "build"
+      },
+      {
+         "label": "build json_parser",
+         "type": "shell",
+         "command": "gcc",
+         "args": [
+            "-g",
+            "-Wall",
+            "-O0",
+            "-c",
+            "src/core/json_parser.c",
+            "-o",
+            "test/build/json_parser.o",
+            "-Iinclude"
+         ],
+         "group": "build"
+      },
+      {
+         "label": "build builder",
+         "type": "shell",
+         "command": "gcc",
+         "args": [
+            "-g",
+            "-Wall",
+            "-O0",
+            "-c",
+            "src/core/builder.c",
+            "-o",
+            "test/build/builder.o",
+            "-Iinclude"
+         ],
+         "group": "build"
+      },
+      {
+         "label": "build sigbuild",
+         "type": "shell",
+         "command": "gcc",
+         "args": [
+            "-g",
+            "-Wall",
+            "-O0",
+            "-c",
+            "src/sigbuild.c",
+            "-o",
+            "test/build/sigbuild.o",
+            "-Iinclude"
+         ],
+         "group": "build"
+      },
+      {
+         "label": "build main",
+         "type": "shell",
+         "command": "gcc",
+         "args": [
+            "-g",
+            "-Wall",
+            "-O0",
+            "-c",
+            "src/main.c",
+            "-o",
+            "test/build/main.o",
+            "-Iinclude"
+         ],
+         "group": "build"
+      },
+      {
+         "label": "build cJSON",
+         "type": "shell",
+         "command": "gcc",
+         "args": [
+            "-g",
+            "-Wall",
+            "-O0",
+            "-c",
+            "lib/cjson/cJSON.c",
+            "-o",
+            "test/build/cJSON.o",
+            "-Iinclude"
+         ],
+         "group": "build"
+      },
+      {
+         "label": "link",
+         "type": "shell",
+         "command": "gcc",
+         "args": [
+            "-g",
+            "-o",
+            "bin/sigbuild",
+            "test/build/cli_parser.o",
+            "test/build/json_parser.o",
+            "test/build/builder.o",
+            "test/build/sigbuild.o",
+            "test/build/main.o",
+            "test/build/cJSON.o"
+         ],
+         "group": {
+            "kind": "build",
+            "isDefault": true
+         },
+         "dependsOn": [
+            "build debug",
+            "build json_parser",
+            "build builder",
+            "build sigbuild",
+            "build main",
+            "build cJSON"
+         ],
+         "dependsOrder": "sequence"
+      }
+   ]
+}

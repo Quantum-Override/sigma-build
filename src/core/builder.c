@@ -14,11 +14,12 @@
 
 #define CLI_BUILDER_VERSION "0.00.01"
 
-struct build_target_s
+// Function to return the version of the builder
+const char *get_builder_version()
 {
-   string name;
-};
-
+   return CLI_BUILDER_VERSION; // Return the version of the builder
+}
+// Function to build the specified target
 int builder_build_target(BuildTarget target)
 {
    if (!target || !target->name)
@@ -36,5 +37,6 @@ int builder_build_target(BuildTarget target)
 }
 
 const IBuilder Builder = {
+    .get_version = get_builder_version,
     .build = builder_build_target,
 };
