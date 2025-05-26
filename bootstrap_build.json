@@ -8,32 +8,21 @@
   "name": "bootstrap_build",
   "targets": [
     {
-      "name": "simple_binary",
-      "type": "executable",
-      "sources": ["{test_src}main.c"],
-      "output_format": "c_source",
-      "build_dir": "{build_dir}",
-      "compiler": "clang",
-      "compiler_flags": ["-Wall", "-O2", "-c", "-I{test_include}"],
-      "linker_flags": [],
-      "input_formats": ["c_source"],
-      "max_file_size_mb": 10
-    },
-    {
       "name": "sigbuild",
       "type": "executable",
       "sources": [
         "{core_src}cli_parser.c",
         "{core_src}json_parser.c",
-        "{core_src}coordinator.c",
-        "{core_src}sigbuild.c",
-        "src/main.c"
+        "{core_src}builder.c",
+        "src/sigbuild.c",
+        "src/main.c",
+        "lib/cjson/cJSON.c"
       ],
       "output_format": "c_source",
       "build_dir": "{build_dir}",
-      "compiler": "clang",
+      "compiler": "gcc",
       "compiler_flags": ["-Wall", "-O2", "-c"],
-      "linker_flags": ["-lcjson"],
+      "linker_flags": [],
       "input_formats": ["c_source"],
       "max_file_size_mb": 10
     }
