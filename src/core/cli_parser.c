@@ -57,8 +57,8 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
             (*options)->show_about = 0;
             (*options)->show_help = 1;
 
-            (*options)->log_stream = stderr;      // Set log stream to stderr for error messages
-            *error = CLI_ERROR_PARSE_INVALID_ARG; // Invalid log level
+            (*options)->log_stream = stderr;    // Set log stream to stderr for error messages
+            *error = CLI_ERR_PARSE_INVALID_ARG; // Invalid log level
             return;
          }
 
@@ -79,7 +79,7 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
             if (config_file == NULL)
             {
                (*options)->log_stream = stderr; // Set log stream to stderr for error messages
-               *error = CLI_ERROR_PARSE_FAILED; // Memory allocation failed
+               *error = CLI_ERR_PARSE_FAILED;   // Memory allocation failed
                return;
             }
             else
@@ -89,8 +89,8 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
                {
                   free(config_file); // Free the allocated memory for config file
 
-                  (*options)->log_stream = stderr;         // Set log stream to stderr for error messages
-                  *error = CLI_ERROR_PARSE_INVALID_CONFIG; // Invalid or NULL configuration file
+                  (*options)->log_stream = stderr;       // Set log stream to stderr for error messages
+                  *error = CLI_ERR_PARSE_INVALID_CONFIG; // Invalid or NULL configuration file
                   return;
                }
 
@@ -103,15 +103,15 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          }
          else
          {
-            (*options)->log_stream = stderr;         // Set log stream to stderr for error messages
-            *error = CLI_ERROR_PARSE_MISSING_CONFIG; // Missing value for config file option
+            (*options)->log_stream = stderr;       // Set log stream to stderr for error messages
+            *error = CLI_ERR_PARSE_MISSING_CONFIG; // Missing value for config file option
             return;
          }
       }
       else
       {
-         (*options)->log_stream = stderr;         // Set log stream to stderr for error messages
-         *error = CLI_ERROR_PARSE_UNKNOWN_OPTION; // Unknown option provided
+         (*options)->log_stream = stderr;       // Set log stream to stderr for error messages
+         *error = CLI_ERR_PARSE_UNKNOWN_OPTION; // Unknown option provided
          return;
       }
    }

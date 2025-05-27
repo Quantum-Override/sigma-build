@@ -66,25 +66,26 @@ typedef enum
 typedef enum
 {
    CLI_SUCCESS = 0, // No error
+   CLI_FAILURE = 1, // Unknown error
    // CLI Parser Error Codes
-   CLI_ERROR_PARSE_INVALID_ARG = 1001, // Invalid argument provided
-   CLI_ERROR_PARSE_MISSING_OPTION,     // Required option is missing
-   CLI_ERROR_PARSE_INVALID_CONFIG,     // Invalid or NULL configuration file specified
-   CLI_ERROR_PARSE_MISSING_CONFIG,     // Configuration file is missing
-   CLI_ERROR_PARSE_UNKNOWN_OPTION,     // Unknown option provided
-   CLI_ERROR_PARSE_FAILED,             // Failed to parse command line arguments
-   // JSON Parser Error Codes
-   JSON_ERROR_INVALID_FORMAT = 2001, // Invalid JSON format
-   JSON_ERROR_MISSING_FIELD,         // Required field is missing in JSON
-   JSON_ERROR_INVALID_FIELD,         // Invalid field in JSON
-   JSON_ERROR_UNKNOWN_FIELD,         // Unknown field in JSON
-   JSON_ERROR_PARSE_FAILED,          // Failed to parse JSON
-   JSON_ERROR_FILE_NOT_FOUND,        // JSON file not found
-   JSON_ERROR_FILE_READ,             // Error reading JSON file
-   JSON_ERROR_FILE_EMPTY,            // Empty JSON file
-   JSON_LOAD_CONFIG_FAILED,          // Failed to load configuration file
+   CLI_ERR_PARSE_INVALID_ARG = 1001, // Invalid argument provided
+   CLI_ERR_PARSE_MISSING_OPTION,     // Required option is missing
+   CLI_ERR_PARSE_INVALID_CONFIG,     // Invalid or NULL configuration file specified
+   CLI_ERR_PARSE_MISSING_CONFIG,     // Configuration file is missing
+   CLI_ERR_PARSE_UNKNOWN_OPTION,     // Unknown option provided
+   CLI_ERR_PARSE_FAILED,             // Failed to parse command line arguments
+   // Loader Error Codes
+   LOADER_ERR_INVALID_FORMAT = 2001, // Invalid JSON format
+   LOADER_ERR_MISSING_FIELD,         // Required field is missing in JSON
+   LOADER_ERR_INVALID_FIELD,         // Invalid field in JSON
+   LOADER_ERR_UNKNOWN_FIELD,         // Unknown field in JSON
+   LOADER_ERR_PARSE_FAILED,          // Failed to parse JSON
+   LOADER_ERR_FILE_NOT_FOUND,        // JSON file not found
+   LOADER_ERR_FILE_READ,             // Error reading JSON file
+   LOADER_ERR_FILE_EMPTY,            // Empty JSON file
+   LOADER_ERR_LOAD_CONFIG,           // Failed to load configuration file
    // Builder Error Codes
-   BUILD_TARGET_FAILED = 3001, // Build failed
+   BUILD_ERR_BUILD_TARGET = 3001, // Build target failed
 } CLIErrorCode;
 /**
  * @brief CLI options structure.
@@ -207,6 +208,14 @@ typedef struct IApplication
     */
    const char *(*get_err_msg)(CLIErrorCode);
 } IApplication;
+/**
+ * @brief Global resource management interface.
+ */
+typedef struct IResources
+{
+   void (*dispose_config)(BuildConfig); // Dispose of a BuildConfig object
+   void (*dispose_target)(BuildTarget); // Dispose of a BuildTarget object
+} IResources;
 
 /**
  * @brief Global logger instance
@@ -218,5 +227,10 @@ extern const ILogger Logger; // Global logger instance
  * @details This instance is used to manage the application lifecycle.
  */
 extern const IApplication App; // Global application instance
+/**
+ * @brief Global resources instance
+ * @details This instance is used to manage resources such as configurations and targets.
+ */
+extern const IResources Resources; // Global resources instance
 
 #endif // CORE_H

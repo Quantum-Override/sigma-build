@@ -10,7 +10,7 @@
 
 #include "core.h"
 #include "core/cli_parser.h"
-#include "core/json_parser.h"
+#include "core/loader.h"
 #include "core/builder.h"
 #include <errno.h>
 #include <stdlib.h>
@@ -24,6 +24,7 @@
 CLIState cli_state = NULL;   // Global variable to hold the current CLI state
 BuildContext context = NULL; // Global variable to hold the current build context
 
+// CLI declarations
 void cli_init(int, char **);
 void cli_init_context(void);
 void cli_init_state(int, char **);
@@ -34,12 +35,17 @@ const char *cli_get_err_msg(CLIErrorCode);
 void cli_display_help(void);
 void cli_display_about(void);
 
+// Logger declarations
 static void log_message(FILE *, const char *, va_list);
 void writef(const char *, ...);
 void writelnf(const char *, ...);
 void fwritef(FILE *, const char *, ...);
 void fwritelnf(FILE *, const char *, ...);
 void fdebugf(FILE *, LogLevel, DebugLevel, const char *, ...);
+
+// Resources declarations
+void resources_dispose_config(BuildConfig);
+void resources_dispose_target(BuildTarget);
 
 // For dynamic log level annotation
 static const char *DEBUG_LEVELS[] = {
@@ -145,22 +151,22 @@ int cli_load_config(void)
    if (cli_state->options->config_file == NULL)
    {
       fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file is missing.\n");
-      return JSON_ERROR_PARSE_FAILED; // Return error if config file is missing
+      return LOADER_ERR_PARSE_FAILED; // Return error if config file is missing
    }
    // Here you would typically load the configuration file
    // For now, we just simulate a successful load
    if (strcmp(cli_state->options->config_file, "invalid.json") == 0)
    {
       fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid configuration file specified: %s\n", cli_state->options->config_file);
-      return JSON_ERROR_FILE_NOT_FOUND; // Return error if config file is invalid
+      return LOADER_ERR_FILE_NOT_FOUND; // Return error if config file is invalid
    }
 
    // Load configuration
-   BuildConfig config = JParse.parse(cli_state->options->config_file);
+   BuildConfig config = Loader.load_config(cli_state->options->config_file);
    if (!config)
    {
       fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to load configuration from file: %s\n", cli_state->options->config_file);
-      return JSON_ERROR_PARSE_FAILED; // Return error if config file could not be parsed
+      return LOADER_ERR_PARSE_FAILED; // Return error if config file could not be parsed
    }
    // Set the current configuration in the context
    context->current_configuration = cli_state->options->config_file; // Set the current configuration file
@@ -185,7 +191,7 @@ void cli_run(void)
    if (cli_load_config() != CLI_SUCCESS)
    {
       fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to load configuration file: %s\n",
-              cli_get_err_msg(JSON_LOAD_CONFIG_FAILED));
+              cli_get_err_msg(LOADER_ERR_LOAD_CONFIG));
       exit(EXIT_FAILURE);
    }
    BuildConfig config = (BuildConfig)context->data; // Get the loaded configuration from the context
@@ -194,7 +200,7 @@ void cli_run(void)
       if (Builder.build(*target) != 0)
       {
          fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "%s: %s\n",
-                 cli_get_err_msg(BUILD_TARGET_FAILED), (*target)->name);
+                 cli_get_err_msg(BUILD_ERR_BUILD_TARGET), (*target)->name);
          exit(EXIT_FAILURE); // Exit if any build target fails
       }
    }
@@ -235,37 +241,37 @@ const char *cli_get_err_msg(CLIErrorCode code)
    {
    case CLI_SUCCESS:
       return "No error";
-   case CLI_ERROR_PARSE_INVALID_ARG:
+   case CLI_ERR_PARSE_INVALID_ARG:
       return "Invalid argument provided";
-   case CLI_ERROR_PARSE_MISSING_OPTION:
+   case CLI_ERR_PARSE_MISSING_OPTION:
       return "Required option is missing";
-   case CLI_ERROR_PARSE_INVALID_CONFIG:
+   case CLI_ERR_PARSE_INVALID_CONFIG:
       return "Invalid or NULL configuration file specified";
-   case CLI_ERROR_PARSE_MISSING_CONFIG:
+   case CLI_ERR_PARSE_MISSING_CONFIG:
       return "Configuration file is missing";
-   case CLI_ERROR_PARSE_UNKNOWN_OPTION:
+   case CLI_ERR_PARSE_UNKNOWN_OPTION:
       return "Unknown option provided";
-   case CLI_ERROR_PARSE_FAILED:
+   case CLI_ERR_PARSE_FAILED:
       return "Failed to parse command line arguments";
-   case JSON_ERROR_INVALID_FORMAT:
-      return "Invalid JSON format";
-   case JSON_ERROR_MISSING_FIELD:
+   case LOADER_ERR_INVALID_FORMAT:
+      return "Invalid configuration format";
+   case LOADER_ERR_MISSING_FIELD:
       return "Required field is missing in JSON";
-   case JSON_ERROR_INVALID_FIELD:
+   case LOADER_ERR_INVALID_FIELD:
       return "Invalid field in JSON";
-   case JSON_ERROR_UNKNOWN_FIELD:
+   case LOADER_ERR_UNKNOWN_FIELD:
       return "Unknown field in JSON";
-   case JSON_ERROR_PARSE_FAILED:
-      return "Failed to parse JSON";
-   case JSON_ERROR_FILE_NOT_FOUND:
+   case LOADER_ERR_PARSE_FAILED:
+      return "Failed to load JSON";
+   case LOADER_ERR_FILE_NOT_FOUND:
       return "JSON file not found";
-   case JSON_ERROR_FILE_READ:
+   case LOADER_ERR_FILE_READ:
       return "Error reading JSON file";
-   case JSON_ERROR_FILE_EMPTY:
+   case LOADER_ERR_FILE_EMPTY:
       return "Empty JSON file";
-   case JSON_LOAD_CONFIG_FAILED:
+   case LOADER_ERR_LOAD_CONFIG:
       return "Failed to load configuration file";
-   case BUILD_TARGET_FAILED:
+   case BUILD_ERR_BUILD_TARGET:
       return "Build target failed";
    default:
       return "Unknown error code"; // Default case for unknown error codes
@@ -304,7 +310,7 @@ void cli_display_about(void)
    }
 }
 
-/* Helper function to write formatted output to the log stream */
+/* Logger functions to format output */
 // base logging function
 static void log_message(FILE *stream, const char *fmt, va_list args)
 {
@@ -396,6 +402,38 @@ void fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const cha
    va_end(args);
 }
 
+/* Resource functions */
+// This function disposes of the configuration resources
+void resources_dispose_config(BuildConfig config)
+{
+   if (!config)
+      return; // Nothing to dispose of
+
+   free(config->name);
+   free(config->log_file);
+   for (char **var = config->variables; var && *var; var++)
+      free(*var);
+   free(config->variables);
+
+   // Dispose of each target
+   for (BuildTarget *target = config->targets; target && *target; target++)
+   {
+      Resources.dispose_target(*target);
+   }
+   free(config->targets);
+   free(config); // Finally, free the config itself
+}
+// This function disposes of the target resources
+void resources_dispose_target(BuildTarget target)
+{
+   if (!target)
+      return; // Nothing to dispose of
+
+   free(target->name);
+   free(target->type);
+   free(target); // Finally, free the target itself
+}
+
 // Global logger instance
 const ILogger Logger = {
     .write = writef,
@@ -410,4 +448,9 @@ const IApplication App = {
     .run = cli_run,
     .cleanup = cli_cleanup,
     .get_err_msg = cli_get_err_msg,
+};
+// Gloaal resource management instance
+const IResources Resources = {
+    .dispose_config = resources_dispose_config,
+    .dispose_target = resources_dispose_target,
 };

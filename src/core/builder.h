@@ -28,6 +28,14 @@ typedef struct build_target_s
    string *ld_flags; // Array of linker flags for the target
 } build_target_s;
 
+typedef struct build_config_s
+{
+   string name;          // Name of the build configuration
+   string log_file;      // Log file for the build configuration
+   BuildTarget *targets; // Array of build targets for the configuration
+   string *variables;    // Array of key-value pairs for configuration variables
+} build_config_s;
+
 /**
  * @brief IBuilder interface.
  * @details Provides an interface for building the application from the command line interface.

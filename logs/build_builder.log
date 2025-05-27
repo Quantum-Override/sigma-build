@@ -1,0 +1,9 @@
+=== BUILDING
+=== COMPILING src/core/cli_parser.c → test/build/cli_parser.o
+=== COMPILING src/core/loader.c → test/build/loader.o
+=== COMPILING src/core/builder.c → test/build/builder.o
+=== COMPILING src/sigbuild.c → test/build/sigbuild.o
+=== COMPILING src/main.c → test/build/main.o
+=== COMPILING lib/cjson/cJSON.c → test/build/cJSON.o
+=== LINKING
+BUILD SUCCESSFUL: bin/sigbuild

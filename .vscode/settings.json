@@ -1,6 +1,7 @@
 {
    "files.associations": {
       "cli_parser.h": "c",
-      "core.h": "c"
+      "core.h": "c",
+      "builder.h": "c"
    }
 }

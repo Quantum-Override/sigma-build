@@ -18,7 +18,7 @@
          "group": "build"
       },
       {
-         "label": "build json_parser",
+         "label": "build loader",
          "type": "shell",
          "command": "gcc",
          "args": [
@@ -26,10 +26,11 @@
             "-Wall",
             "-O0",
             "-c",
-            "src/core/json_parser.c",
+            "src/core/loader.c",
             "-o",
-            "test/build/json_parser.o",
-            "-Iinclude"
+            "test/build/loader.o",
+            "-Iinclude",
+            "-Ilib/cjson"
          ],
          "group": "build"
       },
@@ -106,7 +107,7 @@
             "-o",
             "bin/sigbuild",
             "test/build/cli_parser.o",
-            "test/build/json_parser.o",
+            "test/build/loader.o",
             "test/build/builder.o",
             "test/build/sigbuild.o",
             "test/build/main.o",
@@ -118,7 +119,7 @@
          },
          "dependsOn": [
             "build debug",
-            "build json_parser",
+            "build loader",
             "build builder",
             "build sigbuild",
             "build main",
