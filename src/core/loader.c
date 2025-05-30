@@ -181,13 +181,15 @@ static char *replace_vars(const char *input) {
    char *result = strdup(input);
    char *temp = NULL;
    char *start = result;
+
    while ((start = strchr(start, '{'))) {
       char *end = strchr(start, '}');
       if (!end) break;
       *end = '\0';
       char *key = start + 1;
-      char *value = VarTable.lookup(key);
-      if (value) {
+      char *value;
+
+      if (VarTable.lookup(key, &value)) {
          size_t prefix_len = start - result;
          size_t suffix_len = strlen(end + 1);
          temp = malloc(prefix_len + strlen(value) + suffix_len + 1);
@@ -199,6 +201,7 @@ static char *replace_vars(const char *input) {
          result = temp;
          temp = NULL;
       }
+
       start = result + (end - result) + 1;
    }
    return result;
