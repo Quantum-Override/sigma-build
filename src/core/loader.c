@@ -23,6 +23,7 @@ static const char *loader_get_version(void) {
 // Forward declaration of of loader functions
 static char **load_string_array(cJSON *array);
 static BuildTarget load_target(cJSON *target_json);
+static char *replace_vars(const char *);
 static void loader_cleanup(void);
 
 /* Load configuration for Build */
@@ -174,33 +175,33 @@ static BuildTarget load_target(cJSON *target_json) {
    }
    return target;
 }
-
-static char* replace_variables(const char *input) {
-    if (!input) return strdup("");
-    char *result = strdup(input);
-    char *temp = NULL;
-    char *start = result;
-    while ((start = strchr(start, '{'))) {
-        char *end = strchr(start, '}');
-        if (!end) break;
-        *end = '\0';
-        char *key = start + 1;
-        char *value = VarTable.lookup(key);
-        if (value) {
-            size_t prefix_len = start - result;
-            size_t suffix_len = strlen(end + 1);
-            temp = malloc(prefix_len + strlen(value) + suffix_len + 1);
-            strncpy(temp, result, prefix_len);
-            temp[prefix_len] = '\0';
-            strcat(temp, value);
-            strcat(temp, end + 1);
-            free(result);
-            result = temp;
-            temp = NULL;
-        }
-        start = result + (end - result) + 1;
-    }
-    return result;
+/* Raplces variable symbols with the value in VarTable */
+static char *replace_vars(const char *input) {
+   if (!input) return strdup("");
+   char *result = strdup(input);
+   char *temp = NULL;
+   char *start = result;
+   while ((start = strchr(start, '{'))) {
+      char *end = strchr(start, '}');
+      if (!end) break;
+      *end = '\0';
+      char *key = start + 1;
+      char *value = VarTable.lookup(key);
+      if (value) {
+         size_t prefix_len = start - result;
+         size_t suffix_len = strlen(end + 1);
+         temp = malloc(prefix_len + strlen(value) + suffix_len + 1);
+         strncpy(temp, result, prefix_len);
+         temp[prefix_len] = '\0';
+         strcat(temp, value);
+         strcat(temp, end + 1);
+         free(result);
+         result = temp;
+         temp = NULL;
+      }
+      start = result + (end - result) + 1;
+   }
+   return result;
 }
 
 /* Loader clean up resources */
