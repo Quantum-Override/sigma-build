@@ -2,6 +2,8 @@
    "files.associations": {
       "cli_parser.h": "c",
       "core.h": "c",
-      "builder.h": "c"
+      "builder.h": "c",
+      "loader.h": "c",
+      "var_table.h": "c"
    }
 }

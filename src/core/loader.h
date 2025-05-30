@@ -38,6 +38,11 @@ typedef struct ILoader
     * @return :a pointer to the BuildConfig structure containing the parsed configuration
     */
    BuildConfig (*load_config)(const char *filename);
+   /**
+    * @brief Clean up resources used by the loader.
+    * @details This function is used to clean up any resources used by the loader.
+    */
+   void (*cleanup)(void);
 } ILoader;
 
 extern const ILoader Loader; // Global JSON parser instance
