@@ -36,8 +36,7 @@ typedef struct build_target_s *BuildTarget;   // BuildTarget is a pointer to the
  *          to control the verbosity of logging output, while DebugLevel is used for
  *          controlling debug output in the code.
  */
-typedef enum
-{
+typedef enum {
    LOG_NONE = 0,    // No logging
    LOG_NORMAL = 1,  // Normal logging
    LOG_VERBOSE = 2, // Verbose logging
@@ -48,8 +47,7 @@ typedef enum
  *          be enabled in the code. It is used to control the granularity of debug
  *          information printed during execution.
  */
-typedef enum
-{
+typedef enum {
    DBG_DEBUG,   // Debug level logging
    DBG_INFO,    // Info level logging
    DBG_WARNING, // Warning level logging
@@ -63,8 +61,7 @@ typedef enum
  *          errors that can occur during command line parsing, such as invalid
  *          arguments, missing required options, or other parsing errors.
  */
-typedef enum
-{
+typedef enum {
    CLI_SUCCESS = 0, // No error
    CLI_FAILURE = 1, // Unknown error
    // CLI Parser Error Codes
@@ -79,6 +76,7 @@ typedef enum
    LOADER_ERR_MISSING_FIELD,         // Required field is missing in JSON
    LOADER_ERR_INVALID_FIELD,         // Invalid field in JSON
    LOADER_ERR_UNKNOWN_FIELD,         // Unknown field in JSON
+   LOADER_ERR_INVALID_VAR,           // Invalid variable reference
    LOADER_ERR_PARSE_FAILED,          // Failed to parse JSON
    LOADER_ERR_FILE_NOT_FOUND,        // JSON file not found
    LOADER_ERR_FILE_READ,             // Error reading JSON file
@@ -93,8 +91,7 @@ typedef enum
  *          It includes flags for showing help, about information, and any custom
  *          options that may be specified by the user.
  */
-typedef struct cli_options_s
-{
+typedef struct cli_options_s {
    int show_help;          // Flag to indicate if help should be displayed
    int show_about;         // Flag to indicate if about information should be displayed
    string config_file;     // Path to the configuration file
@@ -108,8 +105,7 @@ typedef struct cli_options_s
  * @details This structure holds the state of the command line interface, including
  *          the current command, arguments, and options parsed from the command line.
  */
-typedef struct cli_state_s
-{
+typedef struct cli_state_s {
    char **argv;        // Array of arguments for the command
    int argc;           // Number of arguments
    CLIOptions options; // Options parsed from the command line
@@ -119,15 +115,15 @@ typedef struct cli_state_s
 /**
  * @brief A context structure for the current build.
  */
-typedef struct build_context_s
-{
-   LogLevel log_level;          // Current logging level
-   DebugLevel debug_level;      // Current debug level
-   const char *project_name;    // Name of the project being built
-   FILE *log_stream;            // Stream for logging output
-   char *current_target;        // Name of the current target being built
-   char *current_configuration; // Current configuration being used
-   object data;                 // Pointer to any additional data structure
+typedef struct build_context_s {
+   LogLevel log_level;       // Current logging level
+   DebugLevel debug_level;   // Current debug level
+   const char *project_name; // Name of the project being built
+   FILE *log_stream;         // Stream for logging output
+   char *current_target;     // Name of the current target being built
+   char *config_file;        // Configuration being used
+   BuildConfig config;       // Current Build Configuration
+   object data;              // Pointer to any additional data structure
 } build_context_s;
 
 /**
@@ -144,8 +140,7 @@ void get_timestamp(char *, const char *);
  *          debug logging functionality that can be controlled by the log level
  *          and debug level settings.
  */
-typedef struct ILogger
-{
+typedef struct ILogger {
    /**
     * @brief Writes a formatted message to the current test set's log stream
     * @param fmt :the format message to display
@@ -185,8 +180,7 @@ typedef struct ILogger
 /**
  * @brief General application interface.
  */
-typedef struct IApplication
-{
+typedef struct IApplication {
    /**
     * @brief Initializes the application with the given context
     * @param argc :the number of command line arguments
@@ -211,8 +205,7 @@ typedef struct IApplication
 /**
  * @brief Global resource management interface.
  */
-typedef struct IResources
-{
+typedef struct IResources {
    void (*dispose_config)(BuildConfig); // Dispose of a BuildConfig object
    void (*dispose_target)(BuildTarget); // Dispose of a BuildTarget object
 } IResources;

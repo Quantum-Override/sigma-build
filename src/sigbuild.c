@@ -90,7 +90,8 @@ void cli_init(int argc, char **args) {
    context->log_stream = cli_state->options->log_stream;   // Set log stream based on verbosity
    context->project_name = SIGMABUILD_NAME;                // Set default project name
    context->current_target = NULL;                         // No current target by default
-   context->current_configuration = NULL;                  // We will set this later when we load the config
+   context->config_file = NULL;                            // We will set this later when we load the config
+   context->config = NULL;                                 // Store the loaded configuration in the context
    context->data = NULL;                                   // No additional data by default
 }
 // This function initializes the build context with default values
@@ -108,8 +109,8 @@ void cli_init_context(void) {
    context->log_stream = stdout;            // Default log stream is stdout
    context->current_target = NULL;          // No current target by default
    context->project_name = SIGMABUILD_NAME; // Default project name
-   context->current_configuration = NULL;   // No current configuration by default
-   context->data = NULL;                    // No additional data by default
+   context->config_file = NULL;             // No current configuration by default
+   context->config = NULL;                  // No additional config by default
 }
 // This function initializes the CLI state with default values
 void cli_init_state(int argc, char **args) {
@@ -150,14 +151,13 @@ int cli_load_config(void) {
    }
 
    // Load configuration
-   BuildConfig config = Loader.load_config(cli_state->options->config_file);
-   if (!config) {
+   context->config = malloc(sizeof(struct build_config_s));
+   if (!Loader.load_config(cli_state->options->config_file, &context->config)) {
       fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to load configuration from file: %s\n", cli_state->options->config_file);
       return LOADER_ERR_PARSE_FAILED; // Return error if config file could not be parsed
    }
    // Set the current configuration in the context
-   context->current_configuration = cli_state->options->config_file; // Set the current configuration file
-   context->data = config;                                           // Store the loaded configuration in the context
+   context->config_file = cli_state->options->config_file; // Set the current configuration file
 
    return CLI_SUCCESS; // Return success if config file is loaded successfully
 }
@@ -176,7 +176,7 @@ void cli_run(void) {
               cli_get_err_msg(LOADER_ERR_LOAD_CONFIG));
       exit(EXIT_FAILURE);
    }
-   BuildConfig config = (BuildConfig)context->data; // Get the loaded configuration from the context
+   BuildConfig config = context->config; // Get the loaded configuration from the context
    for (BuildTarget *target = config->targets; target && *target; target++) {
       if (Builder.build(*target) != 0) {
          fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "%s: %s\n",
@@ -194,12 +194,13 @@ static void cli_cleanup(void) {
 
    if (context) {
       // Free any resources allocated in the context
-      if (context->data) {
-         resources_dispose_config((BuildConfig)context->data);
-         context->data = NULL;
+      if (context->config) {
+         resources_dispose_config((BuildConfig)context->config);
+         context->config = NULL;
       }
       free(context->current_target);
-      free(context->current_configuration);
+      // config_file is owned by CLIOptions, so we don't free it here
+      // free(context->config_file);
       free(context);
       context = NULL; // Set to NULL after freeing
    }
@@ -285,9 +286,9 @@ void cli_display_about(void) {
       writelnf("%-15s                    %s", "David Boarman", "05-25-2025");
       writelnf("Components:");
       writelnf("  - %-15s%26s", "Core Library", SIGMABUILD_VERSION);
-      writelnf("  - %-15s%26s", "CLI Parser", SIGMABUILD_VERSION);
-      writelnf("  - %-15s%26s", "JSON Parser", SIGMABUILD_VERSION);
-      writelnf("  - %-15s%26s", "Builder", SIGMABUILD_VERSION);
+      writelnf("  - %-15s%26s", "CLI Parser", CLI.get_version());
+      writelnf("  - %-15s%26s", "JSON Loader", Loader.get_version());
+      writelnf("  - %-15s%26s", "Builder", Builder.get_version());
    }
 }
 
@@ -343,7 +344,7 @@ void fwritelnf(FILE *stream, const char *fmt, ...) {
 // Debug logging function
 void fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const char *fmt, ...) {
    // Suppress non-error messages if context or caller specify LOG_NONE.
-   if (log_level == LOG_NONE || ((context ? context->log_level == LOG_NONE : 0) && debug_level < DBG_ERROR)) {
+   if (log_level <= LOG_NORMAL || ((context ? context->log_level == LOG_NONE : 0) && debug_level < DBG_ERROR)) {
       return; // No output for non-error messages when log level is LOG_NONE
    }
 

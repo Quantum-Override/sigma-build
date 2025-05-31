@@ -1,19 +1,10 @@
 === BUILDING
 === COMPILING src/core/cli_parser.c → test/build/cli_parser.o
+=== COMPILING src/core/var_table.c → test/build/var_table.o
 === COMPILING src/core/loader.c → test/build/loader.o
-src/core/loader.c:179:14: warning: ‘replace_vars’ defined but not used [-Wunused-function]
-  179 | static char *replace_vars(const char *input) {
-      |              ^~~~~~~~~~~~
 === COMPILING src/core/builder.c → test/build/builder.o
 === COMPILING src/sigbuild.c → test/build/sigbuild.o
 === COMPILING src/main.c → test/build/main.o
 === COMPILING lib/cjson/cJSON.c → test/build/cJSON.o
 === LINKING
-/usr/bin/ld: test/build/loader.o: warning: relocation against `VarTable' in read-only section `.text'
-/usr/bin/ld: test/build/loader.o: in function `loader_cleanup':
-loader.c:(.text+0x16): undefined reference to `VarTable'
-/usr/bin/ld: test/build/loader.o: in function `loader_load_config':
-loader.c:(.text+0x219): undefined reference to `VarTable'
-/usr/bin/ld: loader.c:(.text+0x660): undefined reference to `VarTable'
-/usr/bin/ld: warning: creating DT_TEXTREL in a PIE
-collect2: error: ld returned 1 exit status
+BUILD SUCCESSFUL: bin/sigbuild

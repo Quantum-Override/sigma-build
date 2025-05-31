@@ -49,6 +49,7 @@ build() {
 
     # Compilation commands
     compile "src/core/cli_parser.c" "$BUILD_DIR/cli_parser.o"
+    compile "src/core/var_table.c" "$BUILD_DIR/var_table.o" "-Ilib/cjson"
     compile "src/core/loader.c" "$BUILD_DIR/loader.o" "-Ilib/cjson"
     compile "src/core/builder.c" "$BUILD_DIR/builder.o"
     compile "src/sigbuild.c" "$BUILD_DIR/sigbuild.o"

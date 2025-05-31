@@ -27,12 +27,22 @@ static char *replace_vars(const char *);
 static void loader_cleanup(void);
 
 /* Load configuration for Build */
-static BuildConfig loader_load_config(const char *filename) {
+static int loader_load_config(const char *filename, BuildConfig *config) {
+   if (!config || !(*config)) {
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "BuildConfig must be allocated: %s",
+                   filename);
+      goto loadExit;
+   }
+   if (!filename) {
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file must not be null");
+      goto loadExit;
+   }
+
    FILE *fp = fopen(filename, "r");
    if (!fp) {
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Failed to open config: %s",
                    filename);
-      return NULL;
+      goto loadExit;
    }
    fseek(fp, 0, SEEK_END);
    long size = ftell(fp);
@@ -42,7 +52,7 @@ static BuildConfig loader_load_config(const char *filename) {
       fclose(fp);
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
                    "Memory allocation failed for config buffer.");
-      return NULL;
+      goto loadExit;
    }
    // Read the file content into the buffer
    size_t read = fread(buffer, 1, size, fp);
@@ -52,7 +62,7 @@ static BuildConfig loader_load_config(const char *filename) {
       fclose(fp);
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
                    "Failed to read config file: %s", filename);
-      return NULL;
+      goto loadExit;
    }
    // Null-terminate the buffer
    buffer[size] = '\0';
@@ -63,65 +73,66 @@ static BuildConfig loader_load_config(const char *filename) {
    if (!json) {
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "JSON load error: %s",
                    cJSON_GetErrorPtr());
-      return NULL;
+      goto loadExit;
    }
 
-   BuildConfig config = malloc(sizeof(struct build_config_s));
-   if (!config) {
-      cJSON_Delete(json);
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
-                   "Memory allocation failed for config.");
-      return NULL;
-   }
    cJSON *name = cJSON_GetObjectItemCaseSensitive(json, "name");
    cJSON *log_file = cJSON_GetObjectItemCaseSensitive(json, "log_file");
    cJSON *targets = cJSON_GetObjectItemCaseSensitive(json, "targets");
    cJSON *variables = cJSON_GetObjectItemCaseSensitive(json, "variables");
    VarTable.load(variables);
 
-   config->name = cJSON_IsString(name) ? strdup(name->valuestring) : NULL;
-   config->log_file =
+   (*config)->name = cJSON_IsString(name) ? strdup(name->valuestring) : NULL;
+   (*config)->log_file =
        cJSON_IsString(log_file) ? strdup(log_file->valuestring) : NULL;
 
    // Load targets
    int target_count = cJSON_IsArray(targets) ? cJSON_GetArraySize(targets) : 0;
-   config->targets = malloc((target_count + 1) * sizeof(BuildTarget));
+   (*config)->targets = malloc((target_count + 1) * sizeof(BuildTarget));
    for (int i = 0; i < target_count; i++) {
       cJSON *target_json = cJSON_GetArrayItem(targets, i);
-      config->targets[i] = load_target(target_json);
-      if (!config->targets[i]) {
+      (*config)->targets[i] = load_target(target_json);
+      if (!(*config)->targets[i]) {
          for (int j = 0; j < i; j++) {
-            Resources.dispose_target(config->targets[j]);
+            Resources.dispose_target((*config)->targets[j]);
          }
-         free(config->targets);
-         free(config->name);
-         free(config->log_file);
-         for (char **var = config->variables; var && *var; var++)
+         free((*config)->targets);
+         free((*config)->name);
+         free((*config)->log_file);
+         for (char **var = (*config)->variables; var && *var; var++)
             free(*var);
-         free(config->variables);
+         free((*config)->variables);
          free(config);
          cJSON_Delete(json);
          VarTable.dispose();
 
-         return NULL;
+         goto loadExit;
       }
    }
-   config->targets[target_count] = NULL;
+   (*config)->targets[target_count] = NULL;
 
    cJSON_Delete(json);
    Logger.fwriteln(stdout, "Parsed config: %s", filename);
-   return config;
+
+loadExit:
+   return (*config) != NULL;
 }
 /* Load string array */
 static char **load_string_array(cJSON *array) {
    if (!array || !cJSON_IsArray(array))
       return NULL;
+
    int count = cJSON_GetArraySize(array);
    char **result = malloc((count + 1) * sizeof(char *));
+
    for (int i = 0; i < count; i++) {
       cJSON *item = cJSON_GetArrayItem(array, i);
-      result[i] = cJSON_IsString(item) ? strdup(item->valuestring) : strdup("");
+      char *raw = cJSON_IsString(item) ? strdup(item->valuestring) : strdup("");
+      result[i] = replace_vars(raw);
+
+      free(raw);
    }
+
    result[count] = NULL;
    return result;
 }
@@ -146,8 +157,9 @@ static BuildTarget load_target(cJSON *target_json) {
    target->name = cJSON_IsString(name) ? strdup(name->valuestring) : NULL;
    target->type = cJSON_IsString(type) ? strdup(type->valuestring) : NULL;
    target->sources = load_string_array(sources);
-   target->build_dir =
+   char *raw_build_dir =
        cJSON_IsString(build_dir) ? strdup(build_dir->valuestring) : NULL;
+   target->build_dir = raw_build_dir ? replace_vars(raw_build_dir) : NULL;
    target->compiler =
        cJSON_IsString(compiler) ? strdup(compiler->valuestring) : NULL;
    target->c_flags = load_string_array(c_flags);

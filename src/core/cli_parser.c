@@ -13,19 +13,15 @@
 #define CLI_PARSER_VERSION "0.00.01"
 
 // Function to get the version of the CLI parser
-const char *cli_parser_get_version(void)
-{
+const char *cli_parser_get_version(void) {
    return CLI_PARSER_VERSION; // Return the version of the CLI parser
 }
 // Function to parse command line arguments
-void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *error)
-{
+void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *error) {
    *error = CLI_SUCCESS; // Initialize error code to success
 
-   for (int i = 1; i < argc; i++)
-   {
-      if (strcmp(argv[i], OPT_SHOW_HELP) == 0)
-      {
+   for (int i = 1; i < argc; i++) {
+      if (strcmp(argv[i], OPT_SHOW_HELP) == 0) {
          // Display help message
          (*options)->show_help = 1;
          *error = CLI_SUCCESS; // No error, just show about information
@@ -35,9 +31,7 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          (*options)->config_file = NULL;     // Reset config file
          (*options)->log_level = LOG_NORMAL; // Reset log level to default
          (*options)->debug_level = DBG_INFO; // Reset debug level to default
-      }
-      else if (strcmp(argv[i], OPT_SHOW_ABOUT) == 0)
-      {
+      } else if (strcmp(argv[i], OPT_SHOW_ABOUT) == 0) {
          // Display version information
          (*options)->show_about = 1;
          *error = CLI_SUCCESS; // No error, just show about information
@@ -47,13 +41,10 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          (*options)->config_file = NULL;     // Reset config file
          (*options)->log_level = LOG_NORMAL; // Reset log level to default
          (*options)->debug_level = DBG_INFO; // Reset debug level to default
-      }
-      else if (strncmp(argv[i], OPT_LOG_LEVEL, strlen(OPT_LOG_LEVEL)) == 0)
-      {
+      } else if (strncmp(argv[i], OPT_LOG_LEVEL, strlen(OPT_LOG_LEVEL)) == 0) {
          // Set the log level based on the provided option
          int level = atoi(argv[i] + strlen(OPT_LOG_LEVEL));
-         if (level < 0 || level > 2)
-         {
+         if (level < 0 || level > 2) {
             (*options)->show_about = 0;
             (*options)->show_help = 1;
 
@@ -63,27 +54,19 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          }
 
          (*options)->log_level = (LogLevel)level; // Set the log level
-      }
-      else if (strcmp(argv[i], OPT_LOG_VERBOSE) == 0)
-      {
+      } else if (strcmp(argv[i], OPT_LOG_VERBOSE) == 0) {
          // Set the log level to verbose
          (*options)->is_verbose = 1; // Set log level to verbose
-      }
-      else if (strncmp(argv[i], OPT_CONFIG_FILE, strlen(OPT_CONFIG_FILE)) == 0)
-      {
+      } else if (strncmp(argv[i], OPT_CONFIG_FILE, strlen(OPT_CONFIG_FILE)) == 0) {
          // Set the configuration file path
-         if (i + 1 < argc)
-         {
+         if (i + 1 < argc) {
             char *config_file = strdup(argv[i + 1]); // Get the next argument as the config file
             // validate the config file path
-            if (config_file == NULL)
-            {
+            if (config_file == NULL) {
                (*options)->log_stream = stderr; // Set log stream to stderr for error messages
                *error = CLI_ERR_PARSE_FAILED;   // Memory allocation failed
                return;
-            }
-            else
-            {
+            } else {
                FILE *file = NULL;
                if (!(file = fopen(config_file, "r"))) // Check if the file exists
                {
@@ -100,16 +83,12 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
 
                continue;
             }
-         }
-         else
-         {
+         } else {
             (*options)->log_stream = stderr;       // Set log stream to stderr for error messages
             *error = CLI_ERR_PARSE_MISSING_CONFIG; // Missing value for config file option
             return;
          }
-      }
-      else
-      {
+      } else {
          (*options)->log_stream = stderr;       // Set log stream to stderr for error messages
          *error = CLI_ERR_PARSE_UNKNOWN_OPTION; // Unknown option provided
          return;

@@ -15,8 +15,8 @@
 #ifndef CONFIG_LOADER_H
 #define CONFIG_LOADER_H
 
-#include "core.h"
 #include "builder.h"
+#include "core.h"
 
 /**
  * @brief ILoader interface.
@@ -24,8 +24,7 @@
  *          This interface defines the functions that can be used to load JSON data
  *          and retrieve configuration information from JSON files.
  */
-typedef struct ILoader
-{
+typedef struct ILoader {
    /**
     * @brief Get the version of the JSON parser.
     * @return :a string representing the version of the JSON parser
@@ -35,9 +34,10 @@ typedef struct ILoader
    /**
     * @brief Parses a JSON file and returns the build configuration.
     * @param filename :the name of the JSON file to load
-    * @return :a pointer to the BuildConfig structure containing the parsed configuration
+    * @param config :the buiold configuration
+    * @return :1 if configuration loaded; otherwise, 0
     */
-   BuildConfig (*load_config)(const char *filename);
+   int (*load_config)(const char *, BuildConfig *);
    /**
     * @brief Clean up resources used by the loader.
     * @details This function is used to clean up any resources used by the loader.

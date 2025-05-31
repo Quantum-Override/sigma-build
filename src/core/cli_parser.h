@@ -16,18 +16,17 @@
 
 #include "core.h"
 
-#define OPT_SHOW_HELP "--help"     // Option to show help
-#define OPT_SHOW_ABOUT "--about"   // Option to show version information
-#define OPT_CONFIG_FILE "--config" // Option to specify a configuration file
-#define OPT_LOG_LEVEL "--log="     // Option to set the log level (0-2)
-#define OPT_LOG_VERBOSE "-v"       // Option for verbose logging (only observed with --about && --help)
+#define OPT_SHOW_HELP "--help"    // Option to show help
+#define OPT_SHOW_ABOUT "--about"  // Option to show version information
+#define OPT_CONFIG_FILE "--build" // Option to specify a build configuration file
+#define OPT_LOG_LEVEL "--log="    // Option to set the log level (0-2)
+#define OPT_LOG_VERBOSE "-v"      // Option for verbose logging (only observed with --about && --help)
 
 /**
  * @brief CLIOptions structure.
  * @details Provides an interface for parsing command line options.
  */
-typedef struct ICLI
-{
+typedef struct ICLI {
    /**
     * @brief Get the version of the CLI parser.
     * @return :the version of the CLI parser as a string

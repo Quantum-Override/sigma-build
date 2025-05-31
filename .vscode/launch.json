@@ -9,7 +9,7 @@
          "args": [
             // "--about",
             // "-v"
-            "--config",
+            "--build",
             "bootstrap_build.json",
             "--log=2"
          ],
@@ -26,6 +26,30 @@
             }
          ],
          "preLaunchTask": "link",
+         "miDebuggerPath": "/usr/bin/gdb"
+      },
+      {
+         "name": "sigbuild",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/bin/sigbuild",
+         "args": [
+            "--build",
+            "bootstrap_build.json",
+            "--log=2"
+         ],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "externalConsole": false,
+         "MIMode": "gdb",
+         "setupCommands": [
+            {
+               "description": "Enable pretty-printing for gdb",
+               "text": "-enable-pretty-printing",
+               "ignoreFailures": true
+            }
+         ],
          "miDebuggerPath": "/usr/bin/gdb"
       }
    ]

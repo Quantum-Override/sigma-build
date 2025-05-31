@@ -17,6 +17,24 @@
          ],
          "group": "build"
       },
+      // new target for var_table
+      {
+         "label": "build var_table",
+         "type": "shell",
+         "command": "gcc",
+         "args": [
+            "-g",
+            "-Wall",
+            "-O0",
+            "-c",
+            "src/core/var_table.c",
+            "-o",
+            "test/build/var_table.o",
+            "-Iinclude",
+            "-Ilib/cjson"
+         ],
+         "group": "build"
+      },
       {
          "label": "build loader",
          "type": "shell",
@@ -107,6 +125,7 @@
             "-o",
             "bin/sigbuild",
             "test/build/cli_parser.o",
+            "test/build/var_table.o",
             "test/build/loader.o",
             "test/build/builder.o",
             "test/build/sigbuild.o",
@@ -119,6 +138,7 @@
          },
          "dependsOn": [
             "build debug",
+            "build var_table",
             "build loader",
             "build builder",
             "build sigbuild",
