@@ -1,0 +1,56 @@
+{
+   "version": "0.2.0",
+   "configurations": [
+      {
+         "name": "Debug sigbuild",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/bin/sigbuild",
+         "args": [
+            // "--about",
+            // "-v"
+            "--build",
+            "bootstrap_build.json",
+            "--log=2"
+         ],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "externalConsole": false,
+         "MIMode": "gdb",
+         "setupCommands": [
+            {
+               "description": "Enable pretty-printing for gdb",
+               "text": "-enable-pretty-printing",
+               "ignoreFailures": true
+            }
+         ],
+         "preLaunchTask": "link",
+         "miDebuggerPath": "/usr/bin/gdb"
+      },
+      {
+         "name": "sigbuild",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/bin/sigbuild",
+         "args": [
+            "--build",
+            "bootstrap_build.json",
+            "--log=2"
+         ],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "externalConsole": false,
+         "MIMode": "gdb",
+         "setupCommands": [
+            {
+               "description": "Enable pretty-printing for gdb",
+               "text": "-enable-pretty-printing",
+               "ignoreFailures": true
+            }
+         ],
+         "miDebuggerPath": "/usr/bin/gdb"
+      }
+   ]
+}

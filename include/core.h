@@ -1,11 +1,11 @@
 /* include/core.h: Core header file for the project
-
-   This file includes standard libraries and project-specific headers.
-
-   David Boarman
-   2025-05-25
-
-   SIGMABUILD_VERSION "0.00.01"
+ *
+ * David Boarman
+ * 2025-05-25
+ *
+ * SIGMABUILD_VERSION "0.00.01"
+ *
+ * This file includes standard libraries and project-specific headers.
  */
 #ifndef CORE_H
 #define CORE_H
@@ -20,10 +20,14 @@ typedef char *string; // String type for character arrays
 struct cli_state_s;     // Forward declaration of CLIState structure
 struct cli_options_s;   // Forward declaration of CLIOptions structure
 struct build_context_s; // Forward declaration of BuildContext structure
+struct build_config_s;  // Forward declaration of build_config_s structure
+struct build_target_s;  // Forward declaration of BuildTarget structure
 
 typedef struct cli_state_s *CLIState;         // CLIState is the structure that holds the state of the command line interface
 typedef struct cli_options_s *CLIOptions;     // CLIOptions is the structure that holds the command line options
 typedef struct build_context_s *BuildContext; // BuildContext is the structure that holds the build context for the application
+typedef struct build_config_s *BuildConfig;   // BuildConfig is a pointer to the build_config_s structure
+typedef struct build_target_s *BuildTarget;   // BuildTarget is a pointer to the build_target_s structure
 
 /**
  * @brief Enumeration for log levels.
@@ -32,8 +36,7 @@ typedef struct build_context_s *BuildContext; // BuildContext is the structure t
  *          to control the verbosity of logging output, while DebugLevel is used for
  *          controlling debug output in the code.
  */
-typedef enum
-{
+typedef enum {
    LOG_NONE = 0,    // No logging
    LOG_NORMAL = 1,  // Normal logging
    LOG_VERBOSE = 2, // Verbose logging
@@ -44,8 +47,7 @@ typedef enum
  *          be enabled in the code. It is used to control the granularity of debug
  *          information printed during execution.
  */
-typedef enum
-{
+typedef enum {
    DBG_DEBUG,   // Debug level logging
    DBG_INFO,    // Info level logging
    DBG_WARNING, // Warning level logging
@@ -59,16 +61,29 @@ typedef enum
  *          errors that can occur during command line parsing, such as invalid
  *          arguments, missing required options, or other parsing errors.
  */
-typedef enum
-{
+typedef enum {
    CLI_SUCCESS = 0, // No error
-   // Parser Error Codes
-   CLI_ERROR_PARSE_INVALID_ARG = 1001, // Invalid argument provided
-   CLI_ERROR_PARSE_MISSING_OPTION,     // Required option is missing
-   CLI_ERROR_PARSE_INVALID_CONFIG,     // Invalid or NULL configuration file specified
-   CLI_ERROR_PARSE_MISSING_CONFIG,     // Configuration file is missing
-   CLI_ERROR_PARSE_UNKNOWN_OPTION,     // Unknown option provided
-   CLI_ERROR_PARSE_FAILED,             // Failed to parse command line arguments
+   CLI_FAILURE = 1, // Unknown error
+   // CLI Parser Error Codes
+   CLI_ERR_PARSE_INVALID_ARG = 1001, // Invalid argument provided
+   CLI_ERR_PARSE_MISSING_OPTION,     // Required option is missing
+   CLI_ERR_PARSE_INVALID_CONFIG,     // Invalid or NULL configuration file specified
+   CLI_ERR_PARSE_MISSING_CONFIG,     // Configuration file is missing
+   CLI_ERR_PARSE_UNKNOWN_OPTION,     // Unknown option provided
+   CLI_ERR_PARSE_FAILED,             // Failed to parse command line arguments
+   // Loader Error Codes
+   LOADER_ERR_INVALID_FORMAT = 2001, // Invalid JSON format
+   LOADER_ERR_MISSING_FIELD,         // Required field is missing in JSON
+   LOADER_ERR_INVALID_FIELD,         // Invalid field in JSON
+   LOADER_ERR_UNKNOWN_FIELD,         // Unknown field in JSON
+   LOADER_ERR_INVALID_VAR,           // Invalid variable reference
+   LOADER_ERR_PARSE_FAILED,          // Failed to parse JSON
+   LOADER_ERR_FILE_NOT_FOUND,        // JSON file not found
+   LOADER_ERR_FILE_READ,             // Error reading JSON file
+   LOADER_ERR_FILE_EMPTY,            // Empty JSON file
+   LOADER_ERR_LOAD_CONFIG,           // Failed to load configuration file
+   // Builder Error Codes
+   BUILD_ERR_BUILD_TARGET = 3001, // Build target failed
 } CLIErrorCode;
 /**
  * @brief CLI options structure.
@@ -76,21 +91,21 @@ typedef enum
  *          It includes flags for showing help, about information, and any custom
  *          options that may be specified by the user.
  */
-typedef struct cli_options_s
-{
+typedef struct cli_options_s {
    int show_help;          // Flag to indicate if help should be displayed
    int show_about;         // Flag to indicate if about information should be displayed
    string config_file;     // Path to the configuration file
    LogLevel log_level;     // Logging level for the application
    DebugLevel debug_level; // Debug level for the application
+   int is_verbose;         // Flag for verbose logging (only observed with --about && --help)
+   FILE *log_stream;       // Stream for logging output
 } cli_options_s;
 /**
  * @brief CLI state structure.
  * @details This structure holds the state of the command line interface, including
  *          the current command, arguments, and options parsed from the command line.
  */
-typedef struct cli_state_s
-{
+typedef struct cli_state_s {
    char **argv;        // Array of arguments for the command
    int argc;           // Number of arguments
    CLIOptions options; // Options parsed from the command line
@@ -100,15 +115,15 @@ typedef struct cli_state_s
 /**
  * @brief A context structure for the current build.
  */
-typedef struct build_context_s
-{
-   LogLevel log_level;          // Current logging level
-   DebugLevel debug_level;      // Current debug level
-   const char *project_name;    // Name of the project being built
-   FILE *log_stream;            // Stream for logging output
-   char *current_target;        // Name of the current target being built
-   char *current_configuration; // Current configuration being used
-   object data;                 // Pointer to any additional data structure
+typedef struct build_context_s {
+   LogLevel log_level;       // Current logging level
+   DebugLevel debug_level;   // Current debug level
+   const char *project_name; // Name of the project being built
+   FILE *log_stream;         // Stream for logging output
+   char *current_target;     // Name of the current target being built
+   char *config_file;        // Configuration being used
+   BuildConfig config;       // Current Build Configuration
+   object data;              // Pointer to any additional data structure
 } build_context_s;
 
 /**
@@ -125,8 +140,7 @@ void get_timestamp(char *, const char *);
  *          debug logging functionality that can be controlled by the log level
  *          and debug level settings.
  */
-typedef struct ILogger
-{
+typedef struct ILogger {
    /**
     * @brief Writes a formatted message to the current test set's log stream
     * @param fmt :the format message to display
@@ -166,8 +180,7 @@ typedef struct ILogger
 /**
  * @brief General application interface.
  */
-typedef struct IApplication
-{
+typedef struct IApplication {
    /**
     * @brief Initializes the application with the given context
     * @param argc :the number of command line arguments
@@ -189,6 +202,13 @@ typedef struct IApplication
     */
    const char *(*get_err_msg)(CLIErrorCode);
 } IApplication;
+/**
+ * @brief Global resource management interface.
+ */
+typedef struct IResources {
+   void (*dispose_config)(BuildConfig); // Dispose of a BuildConfig object
+   void (*dispose_target)(BuildTarget); // Dispose of a BuildTarget object
+} IResources;
 
 /**
  * @brief Global logger instance
@@ -200,5 +220,10 @@ extern const ILogger Logger; // Global logger instance
  * @details This instance is used to manage the application lifecycle.
  */
 extern const IApplication App; // Global application instance
+/**
+ * @brief Global resources instance
+ * @details This instance is used to manage resources such as configurations and targets.
+ */
+extern const IResources Resources; // Global resources instance
 
 #endif // CORE_H

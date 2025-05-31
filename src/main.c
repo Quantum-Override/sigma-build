@@ -13,6 +13,11 @@
 
 int main(int argc, char **argv)
 {
+   App.init(argc, argv); // Initialize the application with command line arguments
+   App.run();            // Run the application
+
+   // This is *technically* optional because clean up is registered `atexit`
+   App.cleanup(); // Clean up resources used by the application
 
    return 0;
 }
