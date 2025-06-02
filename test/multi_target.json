@@ -1,0 +1,39 @@
+{
+  "variables": {
+    "src": "test/src/",
+    "build_dir": "test/build/"
+  },
+  "name": "sample",
+  "log_file": "logs/sample.log",
+  "targets": [
+    {
+      "name": "hello",
+      "type": "executable",
+      "sources": ["{src}main.c"],
+      "build_dir": "{build_dir}",
+      "compiler": "gcc",
+      "compiler_flags": ["-Wall", "-O2", "-c", "-Iinclude"],
+      "linker_flags": [],
+      "input_formats": ["c_source"]
+    },
+    {
+      "name": "hello2",
+      "type": "executable",
+      "sources": ["{src}main2.c"],
+      "build_dir": "{build_dir}",
+      "compiler": "gcc",
+      "compiler_flags": ["-Wall", "-O2", "-c", "-Iinclude"],
+      "linker_flags": [],
+      "input_formats": ["c_source"]
+    },
+    {
+      "name": "clean",
+      "type": "clean",
+      "actions": [
+        {"type": "sanitize_dir", "path": "{build_dir}"}
+        // Add {"type": "remove_dir", "path": "{build_dir}"} for full deletion
+      ]
+    }
+  ],
+  "default_target": "hello"
+}
