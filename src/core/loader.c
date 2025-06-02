@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CONFIG_LOADER_VERSION "0.00.02"
+#define CONFIG_LOADER_VERSION "0.00.03"
 
 static const char *loader_get_version(void) {
    return CONFIG_LOADER_VERSION; // Return the version of the JSON parser

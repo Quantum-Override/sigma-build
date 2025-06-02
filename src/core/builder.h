@@ -17,19 +17,18 @@
 
 #include "core.h"
 
-typedef struct build_target_s
-{
+typedef struct build_target_s {
    string name;      // Name of the build target
    string type;      // Type of the build target (e.g., executable, library)
    string *sources;  // Array of source files for the build targets
    string build_dir; // Directory where the build output will be placed
+   string out_dir;   // Directory where the final output (library or executable) will be placed
    string compiler;  // Compiler to use for building the target
    string *c_flags;  // Array of compiler flags for the target
    string *ld_flags; // Array of linker flags for the target
 } build_target_s;
 
-typedef struct build_config_s
-{
+typedef struct build_config_s {
    string name;          // Name of the build configuration
    string log_file;      // Log file for the build configuration
    BuildTarget *targets; // Array of build targets for the configuration
@@ -42,8 +41,7 @@ typedef struct build_config_s
  *          This interface defines the functions that can be used to build the application
  *          based on the provided build target.
  */
-typedef struct IBuilder
-{
+typedef struct IBuilder {
    /**
     * @brief Gets the version of the builder.
     * @return :the version of the builder as a string

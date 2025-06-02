@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SIGMABUILD_VERSION "0.00.02"
+#define SIGMABUILD_VERSION "0.00.03"
 #define SIGMABUILD_NAME "Sigma.Build"
 
 CLIState cli_state = NULL;   // Global variable to hold the current CLI state
