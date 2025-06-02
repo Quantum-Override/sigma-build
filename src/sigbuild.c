@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SIGMABUILD_VERSION "0.00.01"
+#define SIGMABUILD_VERSION "0.00.02"
 #define SIGMABUILD_NAME "Sigma.Build"
 
 CLIState cli_state = NULL;   // Global variable to hold the current CLI state
@@ -36,12 +36,13 @@ void cli_display_help(void);
 void cli_display_about(void);
 
 // Logger declarations
-static void log_message(FILE *, const char *, va_list);
-void writef(const char *, ...);
-void writelnf(const char *, ...);
-void fwritef(FILE *, const char *, ...);
-void fwritelnf(FILE *, const char *, ...);
-void fdebugf(FILE *, LogLevel, DebugLevel, const char *, ...);
+static void logger_log_message(FILE *, const char *, va_list);
+FILE *logger_get_log_stream(void);
+void logger_writef(const char *, ...);
+void logger_writelnf(const char *, ...);
+void logger_fwritef(FILE *, const char *, ...);
+void logger_fwritelnf(FILE *, const char *, ...);
+void logger_fdebugf(FILE *, LogLevel, DebugLevel, const char *, ...);
 
 // Resources declarations
 void resources_dispose_config(BuildConfig);
@@ -80,8 +81,8 @@ void cli_init(int argc, char **args) {
    CLI.parse_args(argc, args, &cli_state->options, &cli_state->error);
    if (cli_state->error != CLI_SUCCESS) {
       // Handle parsing errors
-      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Error parsing command line arguments: %s\n",
-              cli_get_err_msg(cli_state->error));
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Error parsing command line arguments: %s\n",
+                     cli_get_err_msg(cli_state->error));
       exit(EXIT_FAILURE);
    }
    // Update build context with the parsed options
@@ -99,7 +100,7 @@ void cli_init_context(void) {
    // Allocate memory for the build context
    context = (BuildContext)malloc(sizeof(struct build_context_s));
    if (!context) {
-      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for build context.\n");
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for build context.\n");
       exit(EXIT_FAILURE);
    }
 
@@ -116,14 +117,14 @@ void cli_init_context(void) {
 void cli_init_state(int argc, char **args) {
    cli_state = (CLIState)malloc(sizeof(struct cli_state_s));
    if (!cli_state) {
-      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for CLI state.\n");
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for CLI state.\n");
       exit(EXIT_FAILURE);
    }
    cli_state->argv = args;
    cli_state->argc = argc;
    cli_state->options = (CLIOptions)malloc(sizeof(struct cli_options_s));
    if (!cli_state->options) {
-      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for CLI options.\n");
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for CLI options.\n");
       free(cli_state);
       exit(EXIT_FAILURE);
    }
@@ -138,26 +139,37 @@ void cli_init_state(int argc, char **args) {
 }
 // Load the configuration file specified in the command line options
 int cli_load_config(void) {
-   writelnf("Loading configuration file: %s", cli_state->options->config_file ? cli_state->options->config_file : "None");
+   logger_writelnf("Loading configuration file: %s", cli_state->options->config_file ? cli_state->options->config_file : "None");
    if (cli_state->options->config_file == NULL) {
-      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file is missing.\n");
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file is missing.\n");
       return LOADER_ERR_PARSE_FAILED; // Return error if config file is missing
    }
    // Here you would typically load the configuration file
    // For now, we just simulate a successful load
    if (strcmp(cli_state->options->config_file, "invalid.json") == 0) {
-      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid configuration file specified: %s\n", cli_state->options->config_file);
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid configuration file specified: %s\n", cli_state->options->config_file);
       return LOADER_ERR_FILE_NOT_FOUND; // Return error if config file is invalid
    }
 
    // Load configuration
    context->config = malloc(sizeof(struct build_config_s));
    if (!Loader.load_config(cli_state->options->config_file, &context->config)) {
-      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to load configuration from file: %s\n", cli_state->options->config_file);
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to load configuration from file: %s\n", cli_state->options->config_file);
       return LOADER_ERR_PARSE_FAILED; // Return error if config file could not be parsed
    }
    // Set the current configuration in the context
    context->config_file = cli_state->options->config_file; // Set the current configuration file
+   if (context->config->log_file && cli_state->options->log_stream != stderr) {
+      // modify log_sream
+      FILE *log_file = fopen(context->config->log_file, "w");
+      if (!log_file) {
+         logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to open log file: %s\n", context->config->log_file);
+      } else {
+         context->log_stream = log_file;
+      }
+   } else {
+      context->log_stream = cli_state->options->log_stream;
+   }
 
    return CLI_SUCCESS; // Return success if config file is loaded successfully
 }
@@ -172,15 +184,15 @@ void cli_run(void) {
    }
    // Load the configuration file if specified
    if (cli_load_config() != CLI_SUCCESS) {
-      fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to load configuration file: %s\n",
-              cli_get_err_msg(LOADER_ERR_LOAD_CONFIG));
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to load configuration file: %s\n",
+                     cli_get_err_msg(LOADER_ERR_LOAD_CONFIG));
       exit(EXIT_FAILURE);
    }
    BuildConfig config = context->config; // Get the loaded configuration from the context
    for (BuildTarget *target = config->targets; target && *target; target++) {
       if (Builder.build(*target) != 0) {
-         fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "%s: %s\n",
-                 cli_get_err_msg(BUILD_ERR_BUILD_TARGET), (*target)->name);
+         logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "%s: %s\n",
+                        cli_get_err_msg(BUILD_ERR_BUILD_TARGET), (*target)->name);
          exit(EXIT_FAILURE); // Exit if any build target fails
       }
    }
@@ -201,6 +213,9 @@ static void cli_cleanup(void) {
       free(context->current_target);
       // config_file is owned by CLIOptions, so we don't free it here
       // free(context->config_file);
+      if (context->log_stream != stdout && context->log_stream != stderr) {
+         fclose(context->log_stream);
+      }
       free(context);
       context = NULL; // Set to NULL after freeing
    }
@@ -218,7 +233,7 @@ static void cli_cleanup(void) {
    Loader.cleanup();
 
    is_disposed = 1; // Set the flag to indicate cleanup has been done
-   fdebugf(stdout, LOG_NORMAL, DBG_INFO, "Cleanup completed for Sigma.Build.\n");
+   logger_fdebugf(logger_get_log_stream(), LOG_NORMAL, DBG_INFO, "Cleanup completed for Sigma.Build.\n");
 }
 
 // Get the error message for a given CLIErrorCode
@@ -271,78 +286,87 @@ void cli_display_help(void) {
    snprintf(options, sizeof(options), "[%s]|[%s]|[%s <file>]|[%s0-2]",
             OPT_SHOW_HELP, OPT_SHOW_ABOUT, OPT_CONFIG_FILE, OPT_LOG_LEVEL);
 
-   writelnf("Usage: %s %s", app, options);
-   writelnf("Options:");
-   writelnf("  %-25s Show this help message", OPT_SHOW_HELP);
-   writelnf("  %-25s Show version information", OPT_SHOW_ABOUT);
-   writelnf("  %-9s%-16s Specify the configuration file", OPT_CONFIG_FILE, "<file>");
-   writelnf("  %-6s%-19s Set the log level", OPT_LOG_LEVEL, "(0-2)");
+   logger_fwritelnf(stdout, "Usage: %s %s", app, options);
+   logger_fwritelnf(stdout, "Options:");
+   logger_fwritelnf(stdout, "  %-25s Show this help message", OPT_SHOW_HELP);
+   logger_fwritelnf(stdout, "  %-25s Show version information", OPT_SHOW_ABOUT);
+   logger_fwritelnf(stdout, "  %-9s%-16s Specify the configuration file", OPT_CONFIG_FILE, "<file>");
+   logger_fwritelnf(stdout, "  %-6s%-19s Set the log level", OPT_LOG_LEVEL, "(0-2)");
 }
 // Display application and optional component versions
 void cli_display_about(void) {
-   writelnf("%s v.%s", SIGMABUILD_NAME, SIGMABUILD_VERSION);
    if (cli_state->options->is_verbose) {
-      writelnf("Sigma.Build is a build system for C projects.");
-      writelnf("%-15s                    %s", "David Boarman", "05-25-2025");
-      writelnf("Components:");
-      writelnf("  - %-15s%26s", "Core Library", SIGMABUILD_VERSION);
-      writelnf("  - %-15s%26s", "CLI Parser", CLI.get_version());
-      writelnf("  - %-15s%26s", "JSON Loader", Loader.get_version());
-      writelnf("  - %-15s%26s", "Builder", Builder.get_version());
+      logger_fwritelnf(stdout, "Sigma.Build is a build system for C projects.");
+      logger_fwritelnf(stdout, "%-15s                    %s", "David Boarman", "05-25-2025");
+      logger_fwritelnf(stdout, "Components:");
+      logger_fwritelnf(stdout, "  - %-15s%26s", "Core Library", SIGMABUILD_VERSION);
+      logger_fwritelnf(stdout, "  - %-15s%26s", "CLI Parser", CLI.get_version());
+      logger_fwritelnf(stdout, "  - %-15s%26s", "JSON Loader", Loader.get_version());
+      logger_fwritelnf(stdout, "  - %-15s%26s", "Builder", Builder.get_version());
+   } else {
+      logger_fwritelnf(stdout, "%s v.%s", SIGMABUILD_NAME, SIGMABUILD_VERSION);
    }
 }
 
 /* Logger functions to format output */
 // base logging function
-static void log_message(FILE *stream, const char *fmt, va_list args) {
+static void logger_log_message(FILE *stream, const char *fmt, va_list args) {
    vfprintf(stream, fmt, args);
    fflush(stream);
 }
+// Get the log stream based on the current context
+FILE *logger_get_log_stream(void) {
+   if (context && context->log_stream) {
+      return context->log_stream; // Return the log stream from the context
+   }
+
+   return stdout; // Default to stdout if no log stream is set
+}
 // This function is used to write formatted messages to the log stream
-void writef(const char *fmt, ...) {
+void logger_writef(const char *fmt, ...) {
    va_list args;
    va_start(args, fmt);
 
-   log_message(context->log_stream, fmt, args);
+   logger_log_message(context->log_stream, fmt, args);
 
    va_end(args);
 }
 // This function is used to write formatted messages with a newline to the log stream
-void writelnf(const char *fmt, ...) {
+void logger_writelnf(const char *fmt, ...) {
    va_list args;
    va_start(args, fmt);
 
    // append a newline to the format string
    char msg[1024];
    snprintf(msg, sizeof(msg), "%s\n", fmt);
-   log_message(context->log_stream, msg, args);
+   logger_log_message(context->log_stream, msg, args);
 
    va_end(args);
 }
 // This function is used to write formatted messages to the given stream
-void fwritef(FILE *stream, const char *fmt, ...) {
+void logger_fwritef(FILE *stream, const char *fmt, ...) {
    va_list args;
    va_start(args, fmt);
 
    stream = stream ? stream : stdout; // Default to stdout if no stream is provided
-   log_message(stream, fmt, args);
+   logger_log_message(stream, fmt, args);
 
    va_end(args);
 }
 // This function is used to write formatted messages with a newline to the given stream
-void fwritelnf(FILE *stream, const char *fmt, ...) {
+void logger_fwritelnf(FILE *stream, const char *fmt, ...) {
    va_list args;
    va_start(args, fmt);
 
    stream = stream ? stream : stdout; // Default to stdout if no stream is provided
    char msg[1024];
    snprintf(msg, sizeof(msg), "%s\n", fmt);
-   log_message(stream, msg, args);
+   logger_log_message(stream, msg, args);
 
    va_end(args);
 }
 // Debug logging function
-void fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const char *fmt, ...) {
+void logger_fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const char *fmt, ...) {
    // Suppress non-error messages if context or caller specify LOG_NONE.
    if (log_level <= LOG_NORMAL || ((context ? context->log_level == LOG_NONE : 0) && debug_level < DBG_ERROR)) {
       return; // No output for non-error messages when log level is LOG_NONE
@@ -369,7 +393,7 @@ void fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, const cha
        (log_level != LOG_NONE && log_level >= (context ? context->log_level : LOG_NORMAL) &&
         debug_level >= (context ? context->debug_level : DBG_DEBUG)) ||
        debug_level >= DBG_ERROR) {
-      log_message(stream, msg, args);
+      logger_log_message(stream, msg, args);
    }
 
    va_end(args);
@@ -406,11 +430,12 @@ void resources_dispose_target(BuildTarget target) {
 
 // Global logger instance
 const ILogger Logger = {
-    .write = writef,
-    .writeln = writelnf,
-    .fwrite = fwritef,
-    .fwriteln = fwritelnf,
-    .debug = fdebugf,
+    .log_stream = logger_get_log_stream,
+    .write = logger_writef,
+    .writeln = logger_writelnf,
+    .fwrite = logger_fwritef,
+    .fwriteln = logger_fwritelnf,
+    .debug = logger_fdebugf,
 };
 // Global application instance
 const IApplication App = {

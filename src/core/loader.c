@@ -29,18 +29,18 @@ static void loader_cleanup(void);
 /* Load configuration for Build */
 static int loader_load_config(const char *filename, BuildConfig *config) {
    if (!config || !(*config)) {
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "BuildConfig must be allocated: %s",
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "BuildConfig must be allocated: %s\n",
                    filename);
       goto loadExit;
    }
    if (!filename) {
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file must not be null");
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file must not be null\n");
       goto loadExit;
    }
 
    FILE *fp = fopen(filename, "r");
    if (!fp) {
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Failed to open config: %s",
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Failed to open config: %s\n",
                    filename);
       goto loadExit;
    }
@@ -51,7 +51,7 @@ static int loader_load_config(const char *filename, BuildConfig *config) {
    if (!buffer) {
       fclose(fp);
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
-                   "Memory allocation failed for config buffer.");
+                   "Memory allocation failed for config buffer.\n");
       goto loadExit;
    }
    // Read the file content into the buffer
@@ -61,7 +61,7 @@ static int loader_load_config(const char *filename, BuildConfig *config) {
       free(buffer);
       fclose(fp);
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
-                   "Failed to read config file: %s", filename);
+                   "Failed to read config file: %s\n", filename);
       goto loadExit;
    }
    // Null-terminate the buffer
@@ -71,7 +71,7 @@ static int loader_load_config(const char *filename, BuildConfig *config) {
    cJSON *json = cJSON_Parse(buffer);
    free(buffer);
    if (!json) {
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "JSON load error: %s",
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "JSON load error: %s\n",
                    cJSON_GetErrorPtr());
       goto loadExit;
    }
@@ -141,7 +141,7 @@ static BuildTarget load_target(cJSON *target_json) {
    BuildTarget target = malloc(sizeof(struct build_target_s));
    if (!target) {
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
-                   "Failed to allocate memory for build target.");
+                   "Failed to allocate memory for build target.\n");
       return NULL;
    }
    cJSON *name = cJSON_GetObjectItemCaseSensitive(target_json, "name");
@@ -168,7 +168,7 @@ static BuildTarget load_target(cJSON *target_json) {
    if (!target->name || !target->type || !target->sources ||
        !target->build_dir || !target->compiler) {
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
-                   "Missing required fields in build target.");
+                   "Missing required fields in build target.\n");
       free(target->name);
       free(target->type);
       for (char **src = target->sources; src && *src; src++)

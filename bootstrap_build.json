@@ -25,7 +25,9 @@
       "compiler_flags": [
         "-Wall",
         "-O2",
-        "-c"
+        "-c",
+        "-Iinclude",
+        "-Ilib/cjson"
       ],
       "linker_flags": [],
       "input_formats": [
@@ -34,7 +36,7 @@
       "max_file_size_mb": 10
     }
   ],
-  "log_file": "logs/bootstrap.json",
+  "log_file": "logs/bootstrap.log",
   "incremental_build": false,
   "parallel_jobs": 1,
   "default_target": "sigbuild"

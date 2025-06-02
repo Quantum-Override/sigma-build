@@ -142,6 +142,11 @@ void get_timestamp(char *, const char *);
  */
 typedef struct ILogger {
    /**
+    * @brief Returns the current log stream
+    * @return :the current log stream
+    */
+   FILE *(*log_stream)(void); // Returns the current log stream
+   /**
     * @brief Writes a formatted message to the current test set's log stream
     * @param fmt :the format message to display
     * @param ... :the variable arguments for the format message
