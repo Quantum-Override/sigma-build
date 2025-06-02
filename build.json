@@ -1,0 +1,43 @@
+{
+  "vars": {
+    "CORE": "src/core/",
+    "BLD_DIR": "build/",
+    "OUT_DIR": "bin/"
+  },
+  "name": "bootstrap_build",
+  "targets": [
+    {
+      "name": "sigbuild",
+      "type": "executable",
+      "sources": [
+        "{CORE}cli_parser.c",
+        "{CORE}var_table.c",
+        "{CORE}loader.c",
+        "{CORE}builder.c",
+        "src/sigbuild.c",
+        "src/main.c",
+        "lib/cjson/cJSON.c"
+      ],
+      "output_format": "c_source",
+      "build_dir": "{BLD_DIR}",
+      "compiler": "gcc",
+      "compiler_flags": [
+        "-Wall",
+        "-O2",
+        "-c",
+        "-Iinclude",
+        "-Ilib/cjson"
+      ],
+      "linker_flags": [],
+      "input_formats": [
+        "c_source"
+      ],
+      "out_dir": "{OUT_DIR}",
+      "max_file_size_mb": 10
+    }
+  ],
+  "log_file": "logs/sigma_build.log",
+  "incremental_build": false,
+  "parallel_jobs": 1,
+  "default_target": "sigbuild"
+}
