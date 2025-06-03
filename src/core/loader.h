@@ -18,6 +18,26 @@
 #include "builder.h"
 #include "core.h"
 
+#define CONFIG_FIELD_NAME "name"
+#define CONFIG_FIELD_VARIABLES "vars"
+#define CONFIG_FIELD_LOG_FILE "log_file"
+#define CONFIG_FIELD_TARGETS "targets"
+#define CONFIG_FIELD_DEFAULT_TARGET "default_target"
+
+#define CONFIG_TARGET_NAME "name"
+#define CONFIG_TARGET_TYPE "type"
+#define CONFIG_TARGET_SOURCES "sources"
+#define CONFIG_TARGET_BUILD_DIR "build_dir"
+#define CONFIG_TARGET_COMPILER "compiler"
+#define CONFIG_TARGET_COMPILER_FLAGS "compiler_flags"
+#define CONFIG_TARGET_LINKER_FLAGS "linker_flags"
+#define CONFIG_TARGET_OUTDIR "out_dir"
+#define CONFIG_TARGET_COMMANDS "commands"
+
+#define TARGET_TYPE_OP "op"
+#define TARGET_TYPE_EXEC "exe"
+#define TARGET_TYPE_LIB "lib"
+
 /**
  * @brief ILoader interface.
  * @details Provides an interface for parsing JSON files.

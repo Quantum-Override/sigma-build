@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define SIGMABUILD_VERSION "0.00.02"
+#define SIGMABUILD_VERSION "0.00.03.001"
 #define SIGMABUILD_NAME "Sigma.Build"
 
 CLIState cli_state = NULL;   // Global variable to hold the current CLI state
@@ -63,6 +63,21 @@ static const char *DEBUG_LEVELS[] = {
 void get_timestamp(char *buffer, const char *format) {
    time_t now = time(NULL);
    strftime(buffer, 32, format, localtime(&now));
+}
+// Function to get the target configuration by name
+BuildTarget get_target(const char *name) {
+   if (!context || !context->config || !context->config->targets) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "No configuration loaded or no targets defined.\n");
+      return NULL; // Return NULL if no configuration or targets are available
+   }
+   for (BuildTarget *target = context->config->targets; target && *target; target++) {
+      if (strcmp((*target)->name, name) == 0) {
+         return *target; // Return the target if found
+      }
+   }
+
+   logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Target '%s' not found in configuration.\n", name);
+   return NULL; // Return NULL if target not found
 }
 
 // CLI App Functions
@@ -189,12 +204,19 @@ void cli_run(void) {
       exit(EXIT_FAILURE);
    }
    BuildConfig config = context->config; // Get the loaded configuration from the context
-   for (BuildTarget *target = config->targets; target && *target; target++) {
-      if (Builder.build(*target) != 0) {
-         logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "%s: %s\n",
-                        cli_get_err_msg(BUILD_ERR_BUILD_TARGET), (*target)->name);
-         exit(EXIT_FAILURE); // Exit if any build target fails
-      }
+
+   // if we have a target in cli_options, override the default target
+   context->current_target = cli_state->options->target_name
+                                 ? cli_state->options->target_name
+                                 : config->default_target; // Set the default target from options
+
+   BuildTarget target = get_target(context->current_target);
+   if (!target) {
+      exit(EXIT_FAILURE); // Exit if the target is not found
+   } else if (Builder.build(target) != 0) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "%s: %s\n",
+                     cli_get_err_msg(BUILD_ERR_BUILD_TARGET), target->name);
+      exit(EXIT_FAILURE); // Exit if any build target fails
    }
 }
 // Cleanup function to free resources allocated during the CLI initialization
@@ -211,8 +233,7 @@ static void cli_cleanup(void) {
          context->config = NULL;
       }
       free(context->current_target);
-      // config_file is owned by CLIOptions, so we don't free it here
-      // free(context->config_file);
+
       if (context->log_stream != stdout && context->log_stream != stderr) {
          fclose(context->log_stream);
       }
@@ -223,6 +244,7 @@ static void cli_cleanup(void) {
    if (cli_state) {
       if (cli_state->options) {
          free(cli_state->options->config_file);
+         free(cli_state->options->target_name);
          free(cli_state->options);
          cli_state->options = NULL; // Set to NULL after freeing
       }
@@ -284,13 +306,13 @@ void cli_display_help(void) {
    // Build options string
    char options[128];
    snprintf(options, sizeof(options), "[%s]|[%s]|[%s <file>]|[%s0-2]",
-            OPT_SHOW_HELP, OPT_SHOW_ABOUT, OPT_CONFIG_FILE, OPT_LOG_LEVEL);
+            OPT_SHOW_HELP, OPT_SHOW_ABOUT, OPT_BUILD_CONFIG, OPT_LOG_LEVEL);
 
    logger_fwritelnf(stdout, "Usage: %s %s", app, options);
    logger_fwritelnf(stdout, "Options:");
    logger_fwritelnf(stdout, "  %-25s Show this help message", OPT_SHOW_HELP);
    logger_fwritelnf(stdout, "  %-25s Show version information", OPT_SHOW_ABOUT);
-   logger_fwritelnf(stdout, "  %-9s%-16s Specify the configuration file", OPT_CONFIG_FILE, "<file>");
+   logger_fwritelnf(stdout, "  %-9s%-16s Specify the configuration file with optional target", OPT_BUILD_CONFIG, "<file>[:target]");
    logger_fwritelnf(stdout, "  %-6s%-19s Set the log level", OPT_LOG_LEVEL, "(0-2)");
 }
 // Display application and optional component versions
@@ -304,7 +326,14 @@ void cli_display_about(void) {
       logger_fwritelnf(stdout, "  - %-15s%26s", "JSON Loader", Loader.get_version());
       logger_fwritelnf(stdout, "  - %-15s%26s", "Builder", Builder.get_version());
    } else {
-      logger_fwritelnf(stdout, "%s v.%s", SIGMABUILD_NAME, SIGMABUILD_VERSION);
+      // display simple version - trim last part of the version string.xxx
+      char *version = strdup(SIGMABUILD_VERSION);
+      char *dot = strrchr(version, '.');
+      if (dot) {
+         *dot = '\0'; // Trim the last part of the version string
+      }
+      logger_fwritelnf(stdout, "%s v.%s", SIGMABUILD_NAME, version);
+      free(version);
    }
 }
 

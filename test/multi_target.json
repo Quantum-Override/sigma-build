@@ -1,38 +1,61 @@
 {
   "variables": {
-    "src": "test/src/",
-    "build_dir": "test/build/"
+    "SRC": "test/src",
+    "BLD_DIR": "test/build",
+    "LOG_DIR": "logs"
   },
-  "name": "sample",
-  "log_file": "logs/sample.log",
+  "name": "multi_target",
+  "log_file": "{LOG_DIR}/multi_target.log",
   "targets": [
+    {
+      "name": "add",
+      "type": "executable",
+      "sources": [
+        "{SRC}/add.c"
+      ],
+      "build_dir": "{BLD_DIR}/",
+      "compiler": "gcc",
+      "compiler_flags": [
+        "-Wall",
+        "-O2",
+        "-c",
+        "-Iinclude"
+      ],
+      "linker_flags": [],
+      "input_formats": [
+        "c_source"
+      ]
+    },
     {
       "name": "hello",
       "type": "executable",
-      "sources": ["{src}main.c"],
-      "build_dir": "{build_dir}",
+      "sources": [
+        "{SRC}/hello.c"
+      ],
+      "build_dir": "{BLD_DIR}/",
       "compiler": "gcc",
-      "compiler_flags": ["-Wall", "-O2", "-c", "-Iinclude"],
+      "compiler_flags": [
+        "-Wall",
+        "-O2",
+        "-c",
+        "-Iinclude"
+      ],
       "linker_flags": [],
-      "input_formats": ["c_source"]
-    },
-    {
-      "name": "hello2",
-      "type": "executable",
-      "sources": ["{src}main2.c"],
-      "build_dir": "{build_dir}",
-      "compiler": "gcc",
-      "compiler_flags": ["-Wall", "-O2", "-c", "-Iinclude"],
-      "linker_flags": [],
-      "input_formats": ["c_source"]
+      "input_formats": [
+        "c_source"
+      ]
     },
     {
       "name": "clean",
       "type": "clean",
-      "actions": [
-        {"type": "sanitize_dir", "path": "{build_dir}"}
-        // Add {"type": "remove_dir", "path": "{build_dir}"} for full deletion
-      ]
+      "commands": {
+        "unix": [
+          "rm {BLD_DIR}/*"
+        ],
+        "windows": [
+          "del {BLD_DIR}\\*"
+        ]
+      }
     }
   ],
   "default_target": "hello"

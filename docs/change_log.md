@@ -1,4 +1,12 @@
+#### **Version 0.00.03**  -- _2025-06-??_
+Objective:
+Expand target functionality with multiple target configuration, default target, a `clean` target with platform-agnostic format (i.e., no platform/OS specific commands), and command-line target execution.
 
+- Multi-target configuration: multiple targets in configuration
+- Specify target from command line:
+  - `--build <config>.json[:target]`
+
+-----  
 #### **Version 0.00.02**  -- _2025-06-01_  
 
 Offical start of change log. **Sigma.Build** is operable without any known bugs.
@@ -9,15 +17,16 @@ Core features:
   - `--about`: about version information
   - `--log=(0-2)`: logging level - `NONE`, `NORMAL`, `VERBOSE`
   - `--help`: display usage information
-- JSON configuration:  
-  - variable annotation:  
+
+**JSON configuration**:  
+- variable annotation:  
 ``` json
 "variables": {
    "CORE": "src/core/",
    "BLD_DIR": "build/"
 }
 ```  
-  - single target although JSON annotation is array (multi-target next)  
+- single target although JSON annotation is array (multi-target next)  
 ``` json
 "targets": [
    {
@@ -50,7 +59,7 @@ Core features:
    }
 ]
 ```  
-  - other JSON fields:
+- other JSON fields:
 ``` json
 "name": "bootstrap_build",
 "log_file": "logs/sigma_build.log",

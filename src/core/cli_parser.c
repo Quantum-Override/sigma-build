@@ -10,7 +10,7 @@
 #include "cli_parser.h"
 #include <string.h>
 
-#define CLI_PARSER_VERSION "0.00.01"
+#define CLI_PARSER_VERSION "0.00.02.001"
 
 // Function to get the version of the CLI parser
 const char *cli_parser_get_version(void) {
@@ -57,32 +57,42 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
       } else if (strcmp(argv[i], OPT_LOG_VERBOSE) == 0) {
          // Set the log level to verbose
          (*options)->is_verbose = 1; // Set log level to verbose
-      } else if (strncmp(argv[i], OPT_CONFIG_FILE, strlen(OPT_CONFIG_FILE)) == 0) {
+      } else if (strncmp(argv[i], OPT_BUILD_CONFIG, strlen(OPT_BUILD_CONFIG)) == 0) {
          // Set the configuration file path
          if (i + 1 < argc) {
-            char *config_file = strdup(argv[i + 1]); // Get the next argument as the config file
-            // validate the config file path
-            if (config_file == NULL) {
+            char *arg = strdup(argv[i + 1]); // Get the next argument: `config.json[:target]`
+            if (!arg) {
                (*options)->log_stream = stderr; // Set log stream to stderr for error messages
                *error = CLI_ERR_PARSE_FAILED;   // Memory allocation failed
                return;
-            } else {
-               FILE *file = NULL;
-               if (!(file = fopen(config_file, "r"))) // Check if the file exists
-               {
-                  free(config_file); // Free the allocated memory for config file
-
-                  (*options)->log_stream = stderr;       // Set log stream to stderr for error messages
-                  *error = CLI_ERR_PARSE_INVALID_CONFIG; // Invalid or NULL configuration file
+            }
+            char *colon = strchr(arg, ':'); // Check for a colon in the argument
+            char *config_file = arg;
+            char *target_name = NULL;
+            if (colon) {
+               *colon = '\0'; // Split the string at the colon
+               target_name = strdup(colon + 1);
+               if (!target_name) {
+                  free(arg);
+                  (*options)->log_stream = stderr;
+                  *error = CLI_ERR_PARSE_FAILED;
                   return;
                }
-
-               (*options)->config_file = config_file; // Set the configuration file path
-               fclose(file);                          // Close the file after checking
-               ++i;                                   // Move to the next argument
-
-               continue;
             }
+            // validate the config file path
+            FILE *file = NULL;
+            if (!(file = fopen(config_file, "r"))) {
+               free(config_file);
+               free(target_name);
+               (*options)->log_stream = stderr;
+               *error = CLI_ERR_PARSE_INVALID_CONFIG;
+               return;
+            }
+
+            (*options)->config_file = config_file; // Set the configuration file path
+            (*options)->target_name = target_name; // Set the target name if provided
+            fclose(file);                          // Close the file after checking
+            ++i;                                   // Move to the next argument
          } else {
             (*options)->log_stream = stderr;       // Set log stream to stderr for error messages
             *error = CLI_ERR_PARSE_MISSING_CONFIG; // Missing value for config file option
