@@ -1,4 +1,4 @@
-/* src/core/json_parser.c
+/* src/core/loader.c
  *
  * Sigma.Build JSON Parser
  * A JSON parser for Sigma.Build.
