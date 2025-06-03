@@ -1,4 +1,4 @@
-/* src/core/json_parser.h
+/* src/core/loader.h
  *
  * Sigma.Build Configuration Loader
  * A JSON-based configuration loader for Sigma.Build.
