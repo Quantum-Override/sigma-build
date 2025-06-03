@@ -1,10 +1,44 @@
-#### **Version 0.00.03**  -- _2025-06-??_
-Objective:
-Expand target functionality with multiple target configuration, default target, a `clean` target with platform-agnostic format (i.e., no platform/OS specific commands), and command-line target execution.
+### **Sigma.Build Change Log**
 
-- Multi-target configuration: multiple targets in configuration
+
+#### **Version 0.00.03**  -- _2025-06-02_
+Expand target functionality with multiple target configuration and command-line target execution.
+
+- Multi-target configuration: multiple target configurations
 - Specify target from command line:
   - `--build <config>.json[:target]`
+- Specify default target
+- Introduced `op` type targets for command execution
+
+**JSON** _Example_:  
+``` json
+  "targets": [
+    {
+      "name": "sigbuild",
+      "type": "exe",
+      "sources": [
+			...
+      ],
+      "build_dir": "{BLD_DIR}/",
+		...
+      "out_dir": "{BIN_DIR}/"
+    },
+    {
+      "name": "clean",
+      "type": "op",
+      "commands": {
+        "linux": [
+          "rm {BLD_DIR}/*"
+        ],
+        "windows": [
+          "del {BLD_DIR}\\*"
+        ]
+      }
+    }
+  ],
+  "default_target": "sigbuild"
+
+```
 
 -----  
 #### **Version 0.00.02**  -- _2025-06-01_  
