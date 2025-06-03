@@ -17,10 +17,10 @@ Expand target functionality with multiple target configuration and command-line 
       "name": "sigbuild",
       "type": "exe",
       "sources": [
-
+        "..": "..."
       ],
       "build_dir": "{BLD_DIR}/",
-
+      "..": "...",
       "out_dir": "{BIN_DIR}/"
     },
     {
