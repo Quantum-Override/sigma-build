@@ -1,9 +1,9 @@
 {
   "variables": {
-    "test_src": "test/src/",
-    "test_include": "test/include/",
-    "core_src": "src/core/",
-    "build_dir": "test/build/"
+    "test_src": "test/src",
+    "test_include": "test/include",
+    "core_src": "src/core",
+    "build_dir": "test/build"
   },
   "name": "bootstrap_build",
   "targets": [
@@ -11,16 +11,16 @@
       "name": "sigbuild",
       "type": "executable",
       "sources": [
-        "{core_src}cli_parser.c",
-        "{core_src}var_table.c",
-        "{core_src}loader.c",
-        "{core_src}builder.c",
+        "{core_src}/cli_parser.c",
+        "{core_src}/var_table.c",
+        "{core_src}/loader.c",
+        "{core_src}/builder.c",
         "src/sigbuild.c",
         "src/main.c",
         "lib/cjson/cJSON.c"
       ],
       "output_format": "c_source",
-      "build_dir": "{build_dir}",
+      "build_dir": "{build_dir}/",
       "compiler": "gcc",
       "compiler_flags": [
         "-Wall",

@@ -95,6 +95,7 @@ typedef struct cli_options_s {
    int show_help;          // Flag to indicate if help should be displayed
    int show_about;         // Flag to indicate if about information should be displayed
    string config_file;     // Path to the configuration file
+   string target_name;     // Name of the target to build
    LogLevel log_level;     // Logging level for the application
    DebugLevel debug_level; // Debug level for the application
    int is_verbose;         // Flag for verbose logging (only observed with --about && --help)

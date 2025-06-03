@@ -1,25 +1,26 @@
 {
   "vars": {
-    "CORE": "src/core/",
-    "BLD_DIR": "build/",
-    "OUT_DIR": "bin/"
+    "CORE": "src/core",
+    "BLD_DIR": "build",
+    "BIN_DIR": "bin",
+    "LOG_DIR": "logs"
   },
-  "name": "bootstrap_build",
+  "name": "Sigma.Build",
+  "log_file": "{LOG_DIR}/sigma_build.log",
   "targets": [
     {
       "name": "sigbuild",
-      "type": "executable",
+      "type": "exe",
       "sources": [
-        "{CORE}cli_parser.c",
-        "{CORE}var_table.c",
-        "{CORE}loader.c",
-        "{CORE}builder.c",
+        "{CORE}/cli_parser.c",
+        "{CORE}/var_table.c",
+        "{CORE}/loader.c",
+        "{CORE}/builder.c",
         "src/sigbuild.c",
         "src/main.c",
         "lib/cjson/cJSON.c"
       ],
-      "output_format": "c_source",
-      "build_dir": "{BLD_DIR}",
+      "build_dir": "{BLD_DIR}/",
       "compiler": "gcc",
       "compiler_flags": [
         "-Wall",
@@ -29,15 +30,19 @@
         "-Ilib/cjson"
       ],
       "linker_flags": [],
-      "input_formats": [
-        "c_source"
-      ],
-      "out_dir": "{OUT_DIR}",
-      "max_file_size_mb": 10
+      "out_dir": "{BIN_DIR}/"
+    },
+    {
+      "name": "clean",
+      "type": "op",
+      "commands": {
+        "linux": [
+          "rm {BLD_DIR}/*"
+        ],
+        "windows": [
+          "del {BLD_DIR}\\*"
+        ]
+      }
     }
-  ],
-  "log_file": "logs/sigma_build.log",
-  "incremental_build": false,
-  "parallel_jobs": 1,
-  "default_target": "sigbuild"
+  ]
 }

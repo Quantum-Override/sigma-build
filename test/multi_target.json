@@ -1,0 +1,62 @@
+{
+  "variables": {
+    "SRC": "test/src",
+    "BLD_DIR": "test/build",
+    "LOG_DIR": "logs"
+  },
+  "name": "multi_target",
+  "log_file": "{LOG_DIR}/multi_target.log",
+  "targets": [
+    {
+      "name": "add",
+      "type": "executable",
+      "sources": [
+        "{SRC}/add.c"
+      ],
+      "build_dir": "{BLD_DIR}/",
+      "compiler": "gcc",
+      "compiler_flags": [
+        "-Wall",
+        "-O2",
+        "-c",
+        "-Iinclude"
+      ],
+      "linker_flags": [],
+      "input_formats": [
+        "c_source"
+      ]
+    },
+    {
+      "name": "hello",
+      "type": "executable",
+      "sources": [
+        "{SRC}/hello.c"
+      ],
+      "build_dir": "{BLD_DIR}/",
+      "compiler": "gcc",
+      "compiler_flags": [
+        "-Wall",
+        "-O2",
+        "-c",
+        "-Iinclude"
+      ],
+      "linker_flags": [],
+      "input_formats": [
+        "c_source"
+      ]
+    },
+    {
+      "name": "clean",
+      "type": "clean",
+      "commands": {
+        "unix": [
+          "rm {BLD_DIR}/*"
+        ],
+        "windows": [
+          "del {BLD_DIR}\\*"
+        ]
+      }
+    }
+  ],
+  "default_target": "hello"
+}

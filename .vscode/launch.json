@@ -10,7 +10,7 @@
             // "--about",
             // "-v"
             "--build",
-            "bootstrap_build.json",
+            "build.json:clean",
             "--log=2"
          ],
          "stopAtEntry": false,
@@ -35,7 +35,7 @@
          "program": "${workspaceFolder}/bin/sigbuild",
          "args": [
             "--build",
-            "bootstrap_build.json",
+            "build.json:sigbuild",
             "--log=2"
          ],
          "stopAtEntry": false,

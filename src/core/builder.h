@@ -22,17 +22,19 @@ typedef struct build_target_s {
    string type;      // Type of the build target (e.g., executable, library)
    string *sources;  // Array of source files for the build targets
    string build_dir; // Directory where the build output will be placed
-   string out_dir;   // Directory where the final output (library or executable) will be placed
+   string out_dir;   // Directory where the final output will be placed (optional - if NULL, will use build_dir)
    string compiler;  // Compiler to use for building the target
    string *c_flags;  // Array of compiler flags for the target
    string *ld_flags; // Array of linker flags for the target
+   string *commands; // Array of custom commands to run
 } build_target_s;
 
 typedef struct build_config_s {
-   string name;          // Name of the build configuration
-   string log_file;      // Log file for the build configuration
-   BuildTarget *targets; // Array of build targets for the configuration
-   string *variables;    // Array of key-value pairs for configuration variables
+   string name;           // Name of the build configuration
+   string log_file;       // Log file for the build configuration
+   BuildTarget *targets;  // Array of build targets for the configuration
+   string *variables;     // Array of key-value pairs for configuration variables
+   string default_target; // Default target to build if none is specified
 } build_config_s;
 
 /**

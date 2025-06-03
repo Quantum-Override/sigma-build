@@ -16,11 +16,11 @@
 
 #include "core.h"
 
-#define OPT_SHOW_HELP "--help"    // Option to show help
-#define OPT_SHOW_ABOUT "--about"  // Option to show version information
-#define OPT_CONFIG_FILE "--build" // Option to specify a build configuration file
-#define OPT_LOG_LEVEL "--log="    // Option to set the log level (0-2)
-#define OPT_LOG_VERBOSE "-v"      // Option for verbose logging (only observed with --about && --help)
+#define OPT_SHOW_HELP "--help"     // Option to show help
+#define OPT_SHOW_ABOUT "--about"   // Option to show version information
+#define OPT_BUILD_CONFIG "--build" // Option to specify a build configuration file
+#define OPT_LOG_LEVEL "--log="     // Option to set the log level (0-2)
+#define OPT_LOG_VERBOSE "-v"       // Option for verbose logging (only observed with --about && --help)
 
 /**
  * @brief CLIOptions structure.
