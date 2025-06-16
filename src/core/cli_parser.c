@@ -54,6 +54,19 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          }
 
          (*options)->log_level = (LogLevel)level; // Set the log level
+      } else if (strncmp(argv[i], OPT_DBG_LEVEL, strlen(OPT_DBG_LEVEL)) == 0) {
+         // Set the debug level based on the provided option
+         int level = atoi(argv[i] + strlen(OPT_DBG_LEVEL));
+         if (level < 0 || level > 4) {
+            (*options)->show_about = 0;
+            (*options)->show_help = 1;
+
+            (*options)->log_stream = stderr;    // Set log stream to stderr for error messages
+            *error = CLI_ERR_PARSE_INVALID_ARG; // Invalid debug level
+            return;
+         }
+
+         (*options)->debug_level = (DebugLevel)level; // Set the debug level
       } else if (strcmp(argv[i], OPT_LOG_VERBOSE) == 0) {
          // Set the log level to verbose
          (*options)->is_verbose = 1; // Set log level to verbose

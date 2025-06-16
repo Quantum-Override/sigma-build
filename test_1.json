@@ -1,0 +1,27 @@
+{
+   "name": "sbuild (functional test)",
+   "log_file": "logs/sigma_build.log",
+   "targets": [
+      {
+         "name": "foo",
+         "sources": []
+      },
+      {
+         "name": "test",
+         "sources": [
+            "src/test.c"
+         ],
+         "cc": "gcc",
+         "output": "test"
+      },
+      {
+         "name": "multi_target",
+         "dependencies": [
+            "lib1",
+            "lib2",
+            "lib3"
+         ],
+         "notify": "Multi-target build."
+      }
+   ]
+}
