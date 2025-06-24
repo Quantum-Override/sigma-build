@@ -454,7 +454,20 @@ void resources_dispose_target(BuildTarget target) {
 
    free(target->name);
    free(target->type);
-   free(target); // Finally, free the target itself
+   for (char **src = target->sources; src && *src; src++)
+      free(*src);
+   free(target->sources);
+   free(target->build_dir);
+   free(target->compiler);
+   for (char **flag = target->c_flags; flag && *flag; flag++)
+      free(*flag);
+   free(target->c_flags);
+   for (char **flag = target->ld_flags; flag && *flag; flag++)
+      free(*flag);
+   free(target->ld_flags);
+   free(target->out_dir);
+   if (target->output) free(target->output);
+   free(target);
 }
 
 // Global logger instance

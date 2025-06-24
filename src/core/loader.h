@@ -32,6 +32,7 @@
 #define CONFIG_TARGET_COMPILER_FLAGS "compiler_flags"
 #define CONFIG_TARGET_LINKER_FLAGS "linker_flags"
 #define CONFIG_TARGET_OUTDIR "out_dir"
+#define CONFIG_TARGET_OUTPUT "output"
 #define CONFIG_TARGET_COMMANDS "commands"
 
 #define TARGET_TYPE_OP "op"

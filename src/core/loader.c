@@ -181,6 +181,8 @@ static BuildTarget load_target(cJSON *target_json) {
        cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_LINKER_FLAGS);
    cJSON *out_dir =
        cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_OUTDIR);
+   cJSON *output =
+       cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_OUTPUT);
 
    target->sources = load_string_array(sources);
    char *raw_build_dir =
@@ -193,25 +195,16 @@ static BuildTarget load_target(cJSON *target_json) {
    char *raw_out_dir =
        cJSON_IsString(out_dir) ? strdup(out_dir->valuestring) : NULL;
    target->out_dir = raw_out_dir ? replace_vars(raw_out_dir) : target->build_dir;
+   char *raw_output =
+       cJSON_IsString(output) ? strdup(output->valuestring) : NULL;
+   target->output = raw_output ? replace_vars(raw_output) : strdup(target->name);
 
    if (!target->name || !target->type || !target->sources ||
        !target->build_dir || !target->compiler) {
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
                    "Missing required fields in build target.\n");
-      free(target->name);
-      free(target->type);
-      for (char **src = target->sources; src && *src; src++)
-         free(*src);
-      free(target->sources);
-      free(target->build_dir);
-      free(target->compiler);
-      for (char **flag = target->c_flags; flag && *flag; flag++)
-         free(*flag);
-      free(target->c_flags);
-      for (char **flag = target->ld_flags; flag && *flag; flag++)
-         free(*flag);
-      free(target->ld_flags);
-      free(target);
+      Resources.dispose_target(target);
+
       return NULL;
    }
    return target;

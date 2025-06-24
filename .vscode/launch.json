@@ -10,7 +10,7 @@
             // "--about",
             // "-v"
             "--build",
-            "build.json:clean",
+            "build.json:build_sblib",
             "--log=2"
          ],
          "stopAtEntry": false,

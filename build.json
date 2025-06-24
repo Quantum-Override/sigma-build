@@ -1,15 +1,66 @@
 {
   "vars": {
     "CORE": "src/core",
+    "SRC_DIR": "src",
+    "INC_DIR": "include",
     "BLD_DIR": "build",
     "BIN_DIR": "bin",
-    "LOG_DIR": "logs"
+    "LOG_DIR": "logs",
+    "LIB_DIR": "lib",
+    "STEST_SRC_DIR": "~/repos/sigma/sigma-test/src",
+    "STEST_INC_DIR": "~/repos/sigma/sigma-test/include"
   },
   "name": "Sigma.Build",
   "log_file": "{LOG_DIR}/sigma_build.log",
   "targets": [
     {
-      "name": "sigbuild",
+      "name": "libsigtest",
+      "type": "lib",
+      "sources": [
+        "{STEST_SRC_DIR}/sigtest.c"
+      ],
+      "build_dir": "{BUILD_DIR}",
+      "compiler": "gcc",
+      "compiler_flags": [
+        "-Wall",
+        "-g",
+        "-fPIC",
+        "-I{INCLUDE_DIR}",
+        "-DSIGTEST_TEST"
+      ],
+      "linker_flags": [
+        "-shared"
+      ],
+      "out_dir": "{LIB_DIR}",
+      "output": "libstest.so"
+    },
+    {
+      "name": "sigtest_cli",
+      "type": "exe",
+      "sources": [
+        "{STEST_SRC_DIR}/sigtest_cli.c"
+      ],
+      "build_dir": "{BUILD_DIR}",
+      "compiler": "gcc",
+      "compiler_flags": [
+        "-Wall",
+        "-g",
+        "-fPIC",
+        "-I{INCLUDE_DIR}"
+      ],
+      "linker_flags": [
+        "-g",
+        "-L{LIB_DIR}",
+        "-lsigtest",
+        "-Wl,-rpath,{LIB_DIR}"
+      ],
+      "dependencies": [
+        "libsigtest"
+      ],
+      "out_dir": "{BIN_DIR}"
+    },
+    {
+      "name": "build_sb",
       "type": "exe",
       "sources": [
         "{CORE}/cli_parser.c",
@@ -30,7 +81,35 @@
         "-Ilib/cjson"
       ],
       "linker_flags": [],
-      "out_dir": "{BIN_DIR}/"
+      "out_dir": "{BIN_DIR}/",
+      "output": "sbuild"
+    },
+    {
+      "name": "build_sblib",
+      "type": "exe",
+      "sources": [
+        "{CORE}/cli_parser.c",
+        "{CORE}/var_table.c",
+        "{CORE}/loader.c",
+        "{CORE}/builder.c",
+        "src/sigbuild.c",
+        "lib/cjson/cJSON.c"
+      ],
+      "build_dir": "{BLD_DIR}/",
+      "compiler": "gcc",
+      "compiler_flags": [
+        "-Wall",
+        "-O2",
+        "-c",
+        "-fPIC",
+        "-Iinclude",
+        "-Ilib/cjson"
+      ],
+      "linker_flags": [
+        "-shared"
+      ],
+      "out_dir": "{LIB_DIR}/",
+      "output": "libsuild.so"
     },
     {
       "name": "clean",
