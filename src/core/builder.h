@@ -15,7 +15,7 @@
 #ifndef BUILDER_H
 #define BUILDER_H
 
-#include "core.h"
+#include "sbuild.h"
 
 typedef struct build_target_s {
    string name;      // Name of the build target

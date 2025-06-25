@@ -14,7 +14,7 @@
 #ifndef CLI_PARSER_H
 #define CLI_PARSER_H
 
-#include "core.h"
+#include "sbuild.h"
 
 #define OPT_SHOW_HELP "--help"     // Option to show help
 #define OPT_SHOW_ABOUT "--about"   // Option to show version information

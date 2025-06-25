@@ -7,8 +7,7 @@
  *
  * This file includes standard libraries and project-specific headers.
  */
-#ifndef CORE_H
-#define CORE_H
+#pragma once
 
 #include <stdint.h>
 #include <stdio.h>
@@ -261,5 +260,3 @@ extern const IResources Resources;
  * @details This Interface is used to handle basic file operations
  */
 extern const IFiles Files;
-
-#endif // CORE_H

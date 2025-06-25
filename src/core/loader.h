@@ -16,7 +16,7 @@
 #define CONFIG_LOADER_H
 
 #include "builder.h"
-#include "core.h"
+#include "sbuild.h"
 
 #define CONFIG_FIELD_NAME "name"
 #define CONFIG_FIELD_VARIABLES "vars"

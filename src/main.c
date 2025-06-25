@@ -9,10 +9,9 @@
  * into a C codebase.
  */
 
-#include "core.h"
+#include "sbuild.h"
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
    App.init(argc, argv); // Initialize the application with command line arguments
    App.run();            // Run the application
 
