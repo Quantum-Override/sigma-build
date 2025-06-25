@@ -75,7 +75,8 @@
       "compiler": "gcc",
       "compiler_flags": [
         "-Wall",
-        "-O2",
+        "-Og",
+        "-g3",
         "-c",
         "-Iinclude",
         "-Ilib/cjson"
@@ -120,6 +121,18 @@
         ],
         "windows": [
           "del {BLD_DIR}\\*"
+        ]
+      }
+    },
+    {
+      "name": "mem_check",
+      "type": "op",
+      "commands": {
+        "linux": [
+          "valgrind --leak-check=full --track-origins=yes --error-exitcode=1 --log-file={LOG_DIR}/mem_check.log ./{BIN_DIR}/sbuild --build build.json:build_sb --log=2"
+        ],
+        "windows": [
+          "wsl valgrind --leak-check=full --track-origins=yes --error-exitcode=1 --log-file={LOG_DIR}/mem_check.log ./{BIN_DIR}/sbuild.exe --build build.json:build_sb --log=2"
         ]
       }
     }

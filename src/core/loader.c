@@ -24,51 +24,25 @@ static const char *loader_get_version(void) {
 static char **load_string_array(cJSON *array);
 static BuildTarget load_target(cJSON *target_json);
 static char **load_platform_commands(cJSON *);
-static char *replace_vars(const char *);
+static char *resolve_vars(const char *);
 static void loader_cleanup(void);
 
 /* Load configuration for Build */
 static int loader_load_config(const char *filename, BuildConfig *config) {
-   if (!config || !(*config)) {
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "BuildConfig must be allocated: %s\n",
-                   filename);
-      goto loadExit;
-   }
    if (!filename) {
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file must not be null\n");
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file name cannot be null.\n");
       goto loadExit;
    }
-
-   FILE *fp = fopen(filename, "r");
-   if (!fp) {
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Failed to open config: %s\n",
-                   filename);
+   if (!config) {
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Invalid configuration structure.\n");
       goto loadExit;
    }
-   fseek(fp, 0, SEEK_END);
-   long size = ftell(fp);
-   fseek(fp, 0, SEEK_SET);
-   char *buffer = malloc(size + 1);
-   if (!buffer) {
-      fclose(fp);
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
-                   "Memory allocation failed for config buffer.\n");
-      goto loadExit;
+   char *buffer;
+   size_t bytes_read = 0;
+   if ((bytes_read = Files.read(filename, &buffer) <= 0)) {
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR, "Failed to read configuration from file: %s\n", filename);
+      return LOADER_ERR_FILE_READ;
    }
-   // Read the file content into the buffer
-   size_t read = fread(buffer, 1, size, fp);
-   // if bytes read is 0 or < size, handle error
-   if (read < size) {
-      free(buffer);
-      fclose(fp);
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
-                   "Failed to read config file: %s\n", filename);
-      goto loadExit;
-   }
-   // Null-terminate the buffer
-   buffer[size] = '\0';
-   fclose(fp);
-
    cJSON *json = cJSON_Parse(buffer);
    free(buffer);
    if (!json) {
@@ -88,14 +62,23 @@ static int loader_load_config(const char *filename, BuildConfig *config) {
    char *raw_log_file =
        cJSON_IsString(log_file) ? strdup(log_file->valuestring) : NULL;
    if (raw_log_file) {
-      (*config)->log_file = replace_vars(raw_log_file);
+      (*config)->log_file = resolve_vars(raw_log_file);
       free(raw_log_file);
    }
    (*config)->default_target =
        cJSON_IsString(default_target) ? strdup(default_target->valuestring) : NULL;
    // Load targets
    int target_count = cJSON_IsArray(targets) ? cJSON_GetArraySize(targets) : 0;
-   (*config)->targets = malloc((target_count + 1) * sizeof(BuildTarget));
+   addr targets_addr;
+   if (!Resources.alloc(&targets_addr, (target_count + 1) * sizeof(BuildTarget))) {
+      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
+                   "Failed to allocate memory for targets array.\n");
+      cJSON_Delete(json);
+      VarTable.dispose();
+      goto loadExit;
+   }
+   (*config)->targets = (BuildTarget *)targets_addr;
+
    for (int i = 0; i < target_count; i++) {
       cJSON *target_json = cJSON_GetArrayItem(targets, i);
       (*config)->targets[i] = load_target(target_json);
@@ -129,28 +112,36 @@ static char **load_string_array(cJSON *array) {
    if (!array || !cJSON_IsArray(array))
       return NULL;
 
+   addr result_addr;
    int count = cJSON_GetArraySize(array);
-   char **result = malloc((count + 1) * sizeof(char *));
 
+   // Allocate pointer array using resources_alloc
+   if (!Resources.alloc(&result_addr, (count + 1) * sizeof(char *))) {
+      return NULL;
+   }
+   char **result = (char **)result_addr;
+
+   // Process each array element
    for (int i = 0; i < count; i++) {
       cJSON *item = cJSON_GetArrayItem(array, i);
       char *raw = cJSON_IsString(item) ? strdup(item->valuestring) : strdup("");
-      result[i] = replace_vars(raw);
-
-      free(raw);
+      result[i] = resolve_vars(raw); // Transfers ownership to result[i]
+      free(raw);                     // Free the intermediate copy
    }
 
-   result[count] = NULL;
+   result[count] = NULL; // NULL-terminate the array
    return result;
 }
 /* Load build target */
 static BuildTarget load_target(cJSON *target_json) {
-   BuildTarget target = malloc(sizeof(struct build_target_s));
-   if (!target) {
+   addr target_addr;
+   if (!Resources.alloc(&target_addr, sizeof(struct build_target_s))) {
       Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
                    "Failed to allocate memory for build target.\n");
       return NULL;
    }
+   BuildTarget target = (BuildTarget)target_addr;
+
    cJSON *name = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_NAME);
    cJSON *type = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_TYPE);
 
@@ -187,17 +178,17 @@ static BuildTarget load_target(cJSON *target_json) {
    target->sources = load_string_array(sources);
    char *raw_build_dir =
        cJSON_IsString(build_dir) ? strdup(build_dir->valuestring) : NULL;
-   target->build_dir = raw_build_dir ? replace_vars(raw_build_dir) : NULL;
+   target->build_dir = raw_build_dir ? resolve_vars(raw_build_dir) : NULL;
    target->compiler =
        cJSON_IsString(compiler) ? strdup(compiler->valuestring) : NULL;
    target->c_flags = load_string_array(c_flags);
    target->ld_flags = load_string_array(ld_flags);
    char *raw_out_dir =
        cJSON_IsString(out_dir) ? strdup(out_dir->valuestring) : NULL;
-   target->out_dir = raw_out_dir ? replace_vars(raw_out_dir) : target->build_dir;
+   target->out_dir = raw_out_dir ? resolve_vars(raw_out_dir) : target->build_dir;
    char *raw_output =
        cJSON_IsString(output) ? strdup(output->valuestring) : NULL;
-   target->output = raw_output ? replace_vars(raw_output) : strdup(target->name);
+   target->output = raw_output ? resolve_vars(raw_output) : strdup(target->name);
 
    if (!target->name || !target->type || !target->sources ||
        !target->build_dir || !target->compiler) {
@@ -231,34 +222,53 @@ static char **load_platform_commands(cJSON *commands) {
    return load_string_array(platform_commands);
 }
 /* Raplaces variable symbols with the value in VarTable */
-static char *replace_vars(const char *input) {
+static char *resolve_vars(const char *input) {
    if (!input) return strdup("");
-   char *result = strdup(input);
-   char *temp = NULL;
-   char *start = result;
 
+   char *result = strdup(input);
+   if (!result) return NULL; // Handle allocation failure
+
+   char *start = result;
    while ((start = strchr(start, '{'))) {
       char *end = strchr(start, '}');
-      if (!end) break;
+      if (!end) break; // No closing brace, stop
+
+      // Extract the key (between '{' and '}')
       *end = '\0';
       char *key = start + 1;
-      char *value;
 
-      if (VarTable.lookup(key, &value)) {
-         size_t prefix_len = start - result;
-         size_t suffix_len = strlen(end + 1);
-         temp = malloc(prefix_len + strlen(value) + suffix_len + 1);
-         strncpy(temp, result, prefix_len);
-         temp[prefix_len] = '\0';
-         strcat(temp, value);
-         strcat(temp, end + 1);
-         free(result);
-         result = temp;
-         temp = NULL;
+      // Look up the value
+      char *value;
+      if (!VarTable.lookup(key, &value)) {
+         *end = '}'; // Restore the original character
+         start = end + 1;
+         continue; // Skip if key not found
       }
 
-      start = result + (end - result) + 1;
+      // Calculate lengths
+      size_t prefix_len = start - result;
+      size_t value_len = strlen(value);
+      size_t suffix_len = strlen(end + 1);
+
+      // Allocate new buffer
+      addr buffer_addr;
+      if (!Resources.alloc(&buffer_addr, prefix_len + value_len + suffix_len + 1)) {
+         free(result);
+         return NULL; // Allocation failed
+      }
+      char *buffer = (char *)buffer_addr;
+
+      // Construct the new string
+      memcpy(buffer, result, prefix_len);
+      memcpy(buffer + prefix_len, value, value_len);
+      memcpy(buffer + prefix_len + value_len, end + 1, suffix_len + 1); // +1 for null terminator
+
+      // Update pointers and free old memory
+      free(result);
+      result = buffer;
+      start = result + prefix_len + value_len; // Continue after the replaced part
    }
+
    return result;
 }
 

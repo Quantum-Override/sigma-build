@@ -10,12 +10,14 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-typedef void *object; // Generic object type for pointers to any data structure
-typedef char *string; // String type for character arrays
+typedef void *object;   // Generic object type for pointers to any data structure
+typedef char *string;   // String type for character arrays
+typedef uintptr_t addr; // An address type for pointers
 
 struct cli_state_s;     // Forward declaration of CLIState structure
 struct cli_options_s;   // Forward declaration of CLIOptions structure
@@ -28,6 +30,9 @@ typedef struct cli_options_s *CLIOptions;     // CLIOptions is the structure tha
 typedef struct build_context_s *BuildContext; // BuildContext is the structure that holds the build context for the application
 typedef struct build_config_s *BuildConfig;   // BuildConfig is a pointer to the build_config_s structure
 typedef struct build_target_s *BuildTarget;   // BuildTarget is a pointer to the build_target_s structure
+
+#define SB_TRUE 1
+#define SB_FALSE 0
 
 /**
  * @brief Enumeration for log levels.
@@ -212,24 +217,50 @@ typedef struct IApplication {
  * @brief Global resource management interface.
  */
 typedef struct IResources {
-   void (*dispose_config)(BuildConfig); // Dispose of a BuildConfig object
-   void (*dispose_target)(BuildTarget); // Dispose of a BuildTarget object
+   /**
+    * @brief Allocates memory for an object of the specified size
+    * @param addr :the address to allocate memory for
+    * @param size :the size of the memory to allocate
+    * @return :1 if allocation was successful; otherwise, 0
+    */
+   int (*alloc)(addr *, size_t);
+   /**
+    * @brief Disposes of a BuildConfig object
+    * @param config :the BuildConfig object to dispose of
+    */
+   void (*dispose_config)(BuildConfig);
+   /**
+    * @brief Disposes of a BuildTarget object
+    * @param target :the BuildTarget object to dispose of
+    */
+   void (*dispose_target)(BuildTarget);
 } IResources;
+/**
+ * @brief Global file interface
+ */
+typedef struct IFiles {
+   size_t (*read)(const char *, char **); // Read file contents to buffer returning number of bytes read
+} IFiles;
 
 /**
- * @brief Global logger instance
- * @details This instance is used to log messages throughout the application.
+ * @brief Global Logger Interface
+ * @details This Interface is used to log messages throughout the application.
  */
-extern const ILogger Logger; // Global logger instance
+extern const ILogger Logger;
 /**
- * @brief Global application instance
- * @details This instance is used to manage the application lifecycle.
+ * @brief Global Application Interface
+ * @details This Interface is used to manage the Application lifecycle.
  */
-extern const IApplication App; // Global application instance
+extern const IApplication App;
 /**
- * @brief Global resources instance
- * @details This instance is used to manage resources such as configurations and targets.
+ * @brief Global Resources Interface
+ * @details This Interface is used to manage resources such as configurations and targets.
  */
-extern const IResources Resources; // Global resources instance
+extern const IResources Resources;
+/**
+ * @brief Global Files Interface
+ * @details This Interface is used to handle basic file operations
+ */
+extern const IFiles Files;
 
 #endif // CORE_H
