@@ -232,7 +232,7 @@ static void cli_cleanup(void) {
          resources_dispose_config((BuildConfig)context->config);
          context->config = NULL;
       }
-      free(context->current_target);
+      // free(context->current_target);
 
       if (context->log_stream != stdout && context->log_stream != stderr) {
          fclose(context->log_stream);
@@ -243,8 +243,14 @@ static void cli_cleanup(void) {
 
    if (cli_state) {
       if (cli_state->options) {
-         free(cli_state->options->config_file);
-         free(cli_state->options->target_name);
+         if (cli_state->options->config_file) {
+            free(cli_state->options->config_file);
+            cli_state->options->config_file = NULL;
+         }
+         if (cli_state->options->target_name) {
+            free(cli_state->options->target_name);
+            cli_state->options->target_name = NULL;
+         }
          free(cli_state->options);
          cli_state->options = NULL; // Set to NULL after freeing
       }
@@ -482,6 +488,12 @@ void resources_dispose_target(BuildTarget target) {
    free(target->ld_flags);
    free(target->out_dir);
    if (target->output) free(target->output);
+   if (target->commands) {
+      for (char **cmd = target->commands; *cmd; cmd++) {
+         free(*cmd); // Free individual command strings
+      }
+      free(target->commands); // Free the array itself
+   }
    free(target);
 }
 

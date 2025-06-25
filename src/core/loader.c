@@ -141,64 +141,78 @@ static BuildTarget load_target(cJSON *target_json) {
       return NULL;
    }
    BuildTarget target = (BuildTarget)target_addr;
+   char *raw_build_dir = NULL, *raw_out_dir = NULL, *raw_output = NULL;
 
+   // Initialize - no need for NULL assignments since Resources.alloc uses calloc
    cJSON *name = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_NAME);
    cJSON *type = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_TYPE);
 
-   target->name = cJSON_IsString(name) ? strdup(name->valuestring) : NULL;
-   target->type = cJSON_IsString(type) ? strdup(type->valuestring) : NULL;
-   if (strcmp(target->type, TARGET_TYPE_OP) == 0) {
-      // If the target type is "clean", we don't need to load other fields
-      target->sources = NULL;
-      target->build_dir = NULL;
-      target->compiler = NULL;
-      target->c_flags = NULL;
-      target->ld_flags = NULL;
+   if (!cJSON_IsString(name)) goto fail;
+   if (!cJSON_IsString(type)) goto fail;
 
-      // parse commands
+   target->name = strdup(name->valuestring);
+   target->type = strdup(type->valuestring);
+   if (!target->name || !target->type) goto fail;
+
+   if (strcmp(target->type, TARGET_TYPE_OP) == 0) {
       cJSON *commands = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_COMMANDS);
       target->commands = load_platform_commands(commands);
-
-      return target; // Return early for clean targets
+      if (!target->commands) goto fail;
+      return target;
    }
 
-   // otherwise our only other type for now is executable
+   // Handle executable target
    cJSON *sources = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_SOURCES);
-   cJSON *build_dir = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_BUILD_DIR);
-   cJSON *compiler = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_COMPILER);
-   cJSON *c_flags =
-       cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_COMPILER_FLAGS);
-   cJSON *ld_flags =
-       cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_LINKER_FLAGS);
-   cJSON *out_dir =
-       cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_OUTDIR);
-   cJSON *output =
-       cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_OUTPUT);
-
    target->sources = load_string_array(sources);
-   char *raw_build_dir =
-       cJSON_IsString(build_dir) ? strdup(build_dir->valuestring) : NULL;
-   target->build_dir = raw_build_dir ? resolve_vars(raw_build_dir) : NULL;
-   target->compiler =
-       cJSON_IsString(compiler) ? strdup(compiler->valuestring) : NULL;
-   target->c_flags = load_string_array(c_flags);
-   target->ld_flags = load_string_array(ld_flags);
-   char *raw_out_dir =
-       cJSON_IsString(out_dir) ? strdup(out_dir->valuestring) : NULL;
-   target->out_dir = raw_out_dir ? resolve_vars(raw_out_dir) : target->build_dir;
-   char *raw_output =
-       cJSON_IsString(output) ? strdup(output->valuestring) : NULL;
-   target->output = raw_output ? resolve_vars(raw_output) : strdup(target->name);
+   if (!target->sources) goto fail;
 
-   if (!target->name || !target->type || !target->sources ||
-       !target->build_dir || !target->compiler) {
-      Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
-                   "Missing required fields in build target.\n");
-      Resources.dispose_target(target);
-
-      return NULL;
+   cJSON *build_dir = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_BUILD_DIR);
+   if (cJSON_IsString(build_dir)) {
+      raw_build_dir = strdup(build_dir->valuestring);
+      target->build_dir = raw_build_dir ? resolve_vars(raw_build_dir) : NULL;
+      free(raw_build_dir);
+      if (!target->build_dir) goto fail;
    }
+
+   cJSON *compiler = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_COMPILER);
+   if (cJSON_IsString(compiler)) {
+      target->compiler = strdup(compiler->valuestring);
+      if (!target->compiler) goto fail;
+   }
+
+   target->c_flags = load_string_array(
+       cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_COMPILER_FLAGS));
+   target->ld_flags = load_string_array(
+       cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_LINKER_FLAGS));
+
+   cJSON *out_dir = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_OUTDIR);
+   if (cJSON_IsString(out_dir)) {
+      raw_out_dir = strdup(out_dir->valuestring);
+      target->out_dir = raw_out_dir ? resolve_vars(raw_out_dir) : NULL;
+      free(raw_out_dir);
+   } else {
+      target->out_dir = target->build_dir;
+   }
+
+   cJSON *output = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_OUTPUT);
+   if (cJSON_IsString(output)) {
+      raw_output = strdup(output->valuestring);
+      target->output = raw_output ? resolve_vars(raw_output) : NULL;
+      free(raw_output);
+   } else {
+      target->output = strdup(target->name);
+   }
+   if (!target->output) goto fail;
+
    return target;
+
+fail:
+   free(raw_build_dir);
+   free(raw_out_dir);
+   free(raw_output);
+   Resources.dispose_target(target);
+
+   return NULL;
 }
 /* Load platform commands*/
 static char **load_platform_commands(cJSON *commands) {

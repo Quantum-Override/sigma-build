@@ -1,131 +1,15 @@
-==19324== Memcheck, a memory error detector
-==19324== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
-==19324== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
-==19324== Command: ./test/bin/sbuild --build build.json:build_sb --log=2
-==19324== Parent PID: 15930
-==19324== 
-==19324== Conditional jump or move depends on uninitialised value(s)
-==19324==    at 0x10D8D2: resources_dispose_config (sigbuild.c:439)
-==19324==    by 0x10CB79: cli_cleanup (sigbuild.c:232)
-==19324==    by 0x10DAEA: main (main.c:20)
-==19324==  Uninitialised value was created by a heap allocation
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10C86C: cli_load_config (sigbuild.c:170)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== Conditional jump or move depends on uninitialised value(s)
-==19324==    at 0x4849845: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10D8EF: resources_dispose_config (sigbuild.c:441)
-==19324==    by 0x10CB79: cli_cleanup (sigbuild.c:232)
-==19324==    by 0x10DAEA: main (main.c:20)
-==19324==  Uninitialised value was created by a heap allocation
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10C86C: cli_load_config (sigbuild.c:170)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== Conditional jump or move depends on uninitialised value(s)
-==19324==    at 0x4849845: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10DA82: resources_dispose_target (sigbuild.c:468)
-==19324==    by 0x10D910: resources_dispose_config (sigbuild.c:445)
-==19324==    by 0x10CB79: cli_cleanup (sigbuild.c:232)
-==19324==    by 0x10DAEA: main (main.c:20)
-==19324==  Uninitialised value was created by a heap allocation
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10B3F3: load_target (loader.c:148)
-==19324==    by 0x10B11B: loader_load_config (loader.c:101)
-==19324==    by 0x10C899: cli_load_config (sigbuild.c:171)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== Conditional jump or move depends on uninitialised value(s)
-==19324==    at 0x10DA8E: resources_dispose_target (sigbuild.c:469)
-==19324==    by 0x10D910: resources_dispose_config (sigbuild.c:445)
-==19324==    by 0x10CB79: cli_cleanup (sigbuild.c:232)
-==19324==    by 0x10DAEA: main (main.c:20)
-==19324==  Uninitialised value was created by a heap allocation
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10B3F3: load_target (loader.c:148)
-==19324==    by 0x10B11B: loader_load_config (loader.c:101)
-==19324==    by 0x10C899: cli_load_config (sigbuild.c:171)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== Invalid free() / delete / delete[] / realloc()
-==19324==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10CC40: cli_cleanup (sigbuild.c:247)
-==19324==    by 0x10DAEA: main (main.c:20)
-==19324==  Address 0x4a841f0 is 0 bytes inside a block of size 9 free'd
-==19324==    at 0x484988F: free (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10CB9B: cli_cleanup (sigbuild.c:235)
-==19324==    by 0x10DAEA: main (main.c:20)
-==19324==  Block was alloc'd at
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x492335E: strdup (strdup.c:42)
-==19324==    by 0x10A83B: cli_parse_args (cli_parser.c:74)
-==19324==    by 0x10C42A: cli_init (sigbuild.c:96)
-==19324==    by 0x10DAD8: main (main.c:16)
-==19324== 
-==19324== 
-==19324== HEAP SUMMARY:
-==19324==     in use at exit: 146 bytes in 13 blocks
-==19324==   total heap usage: 452 allocs, 440 frees, 24,922 bytes allocated
-==19324== 
-==19324== 11 bytes in 1 blocks are indirectly lost in loss record 1 of 5
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10BA21: resolve_vars (loader.c:263)
-==19324==    by 0x10B395: load_string_array (loader.c:138)
-==19324==    by 0x10B8EF: load_platform_commands (loader.c:231)
-==19324==    by 0x10B54C: load_target (loader.c:169)
-==19324==    by 0x10B11B: loader_load_config (loader.c:101)
-==19324==    by 0x10C899: cli_load_config (sigbuild.c:171)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== 27 (16 direct, 11 indirect) bytes in 1 blocks are definitely lost in loss record 2 of 5
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x10B31D: load_string_array (loader.c:133)
-==19324==    by 0x10B8EF: load_platform_commands (loader.c:231)
-==19324==    by 0x10B54C: load_target (loader.c:169)
-==19324==    by 0x10B11B: loader_load_config (loader.c:101)
-==19324==    by 0x10C899: cli_load_config (sigbuild.c:171)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== 31 bytes in 3 blocks are definitely lost in loss record 3 of 5
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x492335E: strdup (strdup.c:42)
-==19324==    by 0x10B73E: load_target (loader.c:199)
-==19324==    by 0x10B11B: loader_load_config (loader.c:101)
-==19324==    by 0x10C899: cli_load_config (sigbuild.c:171)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== 42 bytes in 4 blocks are definitely lost in loss record 4 of 5
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x492335E: strdup (strdup.c:42)
-==19324==    by 0x10B6EE: load_target (loader.c:196)
-==19324==    by 0x10B11B: loader_load_config (loader.c:101)
-==19324==    by 0x10C899: cli_load_config (sigbuild.c:171)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== 46 bytes in 4 blocks are definitely lost in loss record 5 of 5
-==19324==    at 0x4846828: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==19324==    by 0x492335E: strdup (strdup.c:42)
-==19324==    by 0x10B647: load_target (loader.c:189)
-==19324==    by 0x10B11B: loader_load_config (loader.c:101)
-==19324==    by 0x10C899: cli_load_config (sigbuild.c:171)
-==19324==    by 0x10CA15: cli_run (sigbuild.c:201)
-==19324==    by 0x10DAE1: main (main.c:17)
-==19324== 
-==19324== LEAK SUMMARY:
-==19324==    definitely lost: 135 bytes in 12 blocks
-==19324==    indirectly lost: 11 bytes in 1 blocks
-==19324==      possibly lost: 0 bytes in 0 blocks
-==19324==    still reachable: 0 bytes in 0 blocks
-==19324==         suppressed: 0 bytes in 0 blocks
-==19324== 
-==19324== For lists of detected and suppressed errors, rerun with: -s
-==19324== ERROR SUMMARY: 9 errors from 9 contexts (suppressed: 0 from 0)
+==33140== Memcheck, a memory error detector
+==33140== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==33140== Using Valgrind-3.22.0 and LibVEX; rerun with -h for copyright info
+==33140== Command: ./bin/sbuild --build build.json:build_sb --log=2
+==33140== Parent PID: 33139
+==33140== 
+==33140== 
+==33140== HEAP SUMMARY:
+==33140==     in use at exit: 0 bytes in 0 blocks
+==33140==   total heap usage: 477 allocs, 477 frees, 27,027 bytes allocated
+==33140== 
+==33140== All heap blocks were freed -- no leaks are possible
+==33140== 
+==33140== For lists of detected and suppressed errors, rerun with: -s
+==33140== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
