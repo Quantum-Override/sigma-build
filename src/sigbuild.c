@@ -45,8 +45,12 @@ void logger_fwritelnf(FILE *, const char *, ...);
 void logger_fdebugf(FILE *, LogLevel, DebugLevel, const char *, ...);
 
 // Resources declarations
+int resources_alloc(addr *, size_t);
 void resources_dispose_config(BuildConfig);
 void resources_dispose_target(BuildTarget);
+
+// Files declarations
+size_t files_read_file(const char *, char **);
 
 // For dynamic log level annotation
 static const char *DEBUG_LEVELS[] = {
@@ -105,47 +109,44 @@ void cli_init(int argc, char **args) {
    context->debug_level = cli_state->options->debug_level; // Set debug level from options
    context->log_stream = cli_state->options->log_stream;   // Set log stream based on verbosity
    context->project_name = SIGMABUILD_NAME;                // Set default project name
-   context->current_target = NULL;                         // No current target by default
-   context->config_file = NULL;                            // We will set this later when we load the config
-   context->config = NULL;                                 // Store the loaded configuration in the context
-   context->data = NULL;                                   // No additional data by default
 }
 // This function initializes the build context with default values
 void cli_init_context(void) {
    // Allocate memory for the build context
-   context = (BuildContext)malloc(sizeof(struct build_context_s));
-   if (!context) {
+   addr context_addr;
+   if (!resources_alloc(&context_addr, sizeof(struct build_context_s))) {
       logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for build context.\n");
       exit(EXIT_FAILURE);
    }
+   context = (BuildContext)context_addr; // Cast the allocated address to BuildContext
 
    // Initialize the build context with default values
    context->log_level = LOG_NONE;           // Default log level is NONE
    context->debug_level = DBG_INFO;         // Default debug level is INFO
    context->log_stream = stdout;            // Default log stream is stdout
-   context->current_target = NULL;          // No current target by default
    context->project_name = SIGMABUILD_NAME; // Default project name
-   context->config_file = NULL;             // No current configuration by default
-   context->config = NULL;                  // No additional config by default
 }
 // This function initializes the CLI state with default values
 void cli_init_state(int argc, char **args) {
-   cli_state = (CLIState)malloc(sizeof(struct cli_state_s));
-   if (!cli_state) {
+   addr cli_state_addr; // Pointer to hold the address of CLIState
+   if (!resources_alloc(&cli_state_addr, sizeof(struct cli_state_s))) {
       logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for CLI state.\n");
       exit(EXIT_FAILURE);
    }
+   cli_state = (CLIState)cli_state_addr; // Cast the allocated address to CLIState
    cli_state->argv = args;
    cli_state->argc = argc;
-   cli_state->options = (CLIOptions)malloc(sizeof(struct cli_options_s));
-   if (!cli_state->options) {
+
+   addr options_addr; // Pointer to hold the address of CLIOptions
+   if (!resources_alloc(&options_addr, sizeof(struct cli_options_s))) {
       logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for CLI options.\n");
       free(cli_state);
       exit(EXIT_FAILURE);
    }
+   cli_state->options = (CLIOptions)options_addr; // Cast the allocated address to CLIOptions
+   // Initialize CLI options with default values
    cli_state->options->show_help = 0;
    cli_state->options->show_about = 0;
-   cli_state->options->config_file = NULL;     // No config file by default
    cli_state->options->log_level = LOG_NORMAL; // Default log level
    cli_state->options->debug_level = DBG_INFO; // Default debug level
    cli_state->options->is_verbose = 0;         // Verbose logging is off by default
@@ -159,15 +160,14 @@ int cli_load_config(void) {
       logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file is missing.\n");
       return LOADER_ERR_PARSE_FAILED; // Return error if config file is missing
    }
-   // Here you would typically load the configuration file
-   // For now, we just simulate a successful load
-   if (strcmp(cli_state->options->config_file, "invalid.json") == 0) {
-      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid configuration file specified: %s\n", cli_state->options->config_file);
-      return LOADER_ERR_FILE_NOT_FOUND; // Return error if config file is invalid
-   }
 
    // Load configuration
-   context->config = malloc(sizeof(struct build_config_s));
+   addr config_addr;
+   if (!resources_alloc(&config_addr, sizeof(struct build_config_s))) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to allocate memory for build configuration.\n");
+      return LOADER_ERR_PARSE_FAILED; // Return error if config allocation fails
+   }
+   context->config = (BuildConfig)config_addr;
    if (!Loader.load_config(cli_state->options->config_file, &context->config)) {
       logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to load configuration from file: %s\n", cli_state->options->config_file);
       return LOADER_ERR_PARSE_FAILED; // Return error if config file could not be parsed
@@ -232,7 +232,7 @@ static void cli_cleanup(void) {
          resources_dispose_config((BuildConfig)context->config);
          context->config = NULL;
       }
-      free(context->current_target);
+      // free(context->current_target);
 
       if (context->log_stream != stdout && context->log_stream != stderr) {
          fclose(context->log_stream);
@@ -243,8 +243,14 @@ static void cli_cleanup(void) {
 
    if (cli_state) {
       if (cli_state->options) {
-         free(cli_state->options->config_file);
-         free(cli_state->options->target_name);
+         if (cli_state->options->config_file) {
+            free(cli_state->options->config_file);
+            cli_state->options->config_file = NULL;
+         }
+         if (cli_state->options->target_name) {
+            free(cli_state->options->target_name);
+            cli_state->options->target_name = NULL;
+         }
          free(cli_state->options);
          cli_state->options = NULL; // Set to NULL after freeing
       }
@@ -429,6 +435,21 @@ void logger_fdebugf(FILE *stream, LogLevel log_level, DebugLevel debug_level, co
 }
 
 /* Resource functions */
+// This function allocates memory for an object of a given size
+int resources_alloc(addr *out, size_t size) {
+   if (!out || size == 0) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid allocation request: NULL object or size is zero.\n");
+      return SB_FALSE;
+   }
+   object obj = calloc(1, size);
+   if (!obj) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Memory allocation failed: %s\n", strerror(errno));
+      return SB_FALSE;
+   }
+   (*out) = (addr)obj; // Cast the allocated memory to addr type
+
+   return SB_TRUE;
+}
 // This function disposes of the configuration resources
 void resources_dispose_config(BuildConfig config) {
    if (!config)
@@ -454,10 +475,70 @@ void resources_dispose_target(BuildTarget target) {
 
    free(target->name);
    free(target->type);
-   free(target); // Finally, free the target itself
+   for (char **src = target->sources; src && *src; src++)
+      free(*src);
+   free(target->sources);
+   free(target->build_dir);
+   free(target->compiler);
+   for (char **flag = target->c_flags; flag && *flag; flag++)
+      free(*flag);
+   free(target->c_flags);
+   for (char **flag = target->ld_flags; flag && *flag; flag++)
+      free(*flag);
+   free(target->ld_flags);
+   free(target->out_dir);
+   if (target->output) free(target->output);
+   if (target->commands) {
+      for (char **cmd = target->commands; *cmd; cmd++) {
+         free(*cmd); // Free individual command strings
+      }
+      free(target->commands); // Free the array itself
+   }
+   free(target);
 }
 
-// Global logger instance
+/* Files functions */
+// This function reads the contents of a file into a buffer
+size_t files_read_file(const char *filename, char **buffer) {
+   // return number of bytes read ...
+   if (!filename || !buffer) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid file read request: NULL filename or buffer.\n");
+      return 0;
+   }
+   FILE *file = fopen(filename, "rb");
+   if (!file) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to open file: %s\n", filename);
+      return 0; // Return 0 if file could not be opened
+   }
+   fseek(file, 0, SEEK_END);
+   long size = ftell(file);
+   fseek(file, 0, SEEK_SET);
+   if (size <= 0) {
+      fclose(file);
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "File is empty or could not determine size: %s\n", filename);
+      return 0; // Return 0 if file is empty or size could not be determined
+   }
+   addr buffer_addr;
+   if (!resources_alloc(&buffer_addr, size + 1)) {
+      fclose(file);
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Memory allocation failed for file buffer.\n");
+      return 0; // Return 0 if memory allocation fails
+   }
+   *buffer = (char *)buffer_addr;
+
+   size_t bytes_read = fread(*buffer, 1, size, file);
+   fclose(file);
+   if (bytes_read < size) {
+      free(*buffer);
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to read entire file: %s\n", filename);
+      return 0; // Return 0 if not all bytes were read
+   }
+   (*buffer)[size] = '\0'; // Null-terminate the buffer
+
+   return size;
+}
+
+// Global Logger Interface
 const ILogger Logger = {
     .log_stream = logger_get_log_stream,
     .write = logger_writef,
@@ -466,15 +547,20 @@ const ILogger Logger = {
     .fwriteln = logger_fwritelnf,
     .debug = logger_fdebugf,
 };
-// Global application instance
+// Global Application Interface
 const IApplication App = {
     .init = cli_init,
     .run = cli_run,
     .cleanup = cli_cleanup,
     .get_err_msg = cli_get_err_msg,
 };
-// Gloaal resource management instance
+// Global Resources Interface
 const IResources Resources = {
+    .alloc = resources_alloc,
     .dispose_config = resources_dispose_config,
     .dispose_target = resources_dispose_target,
+};
+// Global Files Interface
+const IFiles Files = {
+    .read = files_read_file, // No file reading function defined
 };

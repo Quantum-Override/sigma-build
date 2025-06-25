@@ -123,7 +123,7 @@
          "args": [
             "-g",
             "-o",
-            "bin/sigbuild",
+            "test/bin/sbuild",
             "test/build/cli_parser.o",
             "test/build/var_table.o",
             "test/build/loader.o",

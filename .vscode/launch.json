@@ -2,15 +2,15 @@
    "version": "0.2.0",
    "configurations": [
       {
-         "name": "Debug sigbuild",
+         "name": "Debug sigma.build",
          "type": "cppdbg",
          "request": "launch",
-         "program": "${workspaceFolder}/bin/sigbuild",
+         "program": "${workspaceFolder}/test/bin/sbuild",
          "args": [
             // "--about",
             // "-v"
             "--build",
-            "build.json:clean",
+            "build.json:build_sb",
             "--log=2"
          ],
          "stopAtEntry": false,
@@ -25,17 +25,17 @@
                "ignoreFailures": true
             }
          ],
-         "preLaunchTask": "link",
+         // "preLaunchTask": "link",
          "miDebuggerPath": "/usr/bin/gdb"
       },
       {
-         "name": "sigbuild",
+         "name": "Debug mem.check",
          "type": "cppdbg",
          "request": "launch",
-         "program": "${workspaceFolder}/bin/sigbuild",
+         "program": "${workspaceFolder}/test/bin/sbuild",
          "args": [
             "--build",
-            "build.json:sigbuild",
+            "build.json:mem_check",
             "--log=2"
          ],
          "stopAtEntry": false,
@@ -50,7 +50,8 @@
                "ignoreFailures": true
             }
          ],
+         // "preLaunchTask": "link",
          "miDebuggerPath": "/usr/bin/gdb"
-      }
+      },
    ]
 }

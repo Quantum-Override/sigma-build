@@ -27,6 +27,7 @@ typedef struct build_target_s {
    string *c_flags;  // Array of compiler flags for the target
    string *ld_flags; // Array of linker flags for the target
    string *commands; // Array of custom commands to run
+   string output;    // Output file name for the target (optional)
 } build_target_s;
 
 typedef struct build_config_s {

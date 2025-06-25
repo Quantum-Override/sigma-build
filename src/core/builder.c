@@ -82,7 +82,7 @@ int builder_build_target(BuildTarget target) {
    // Add the libraries to link command
    char link_cmd[4096];
    snprintf(link_cmd, sizeof(link_cmd), "%s %s-o %s%s %s",
-            target->compiler, ld_flags, target->out_dir, target->name, obj_files);
+            target->compiler, ld_flags, target->out_dir, target->output, obj_files);
    Logger.debug(Logger.log_stream(), LOG_VERBOSE, DBG_INFO, "Executing: %s\n", link_cmd);
    // Execute the link command
    if (system(link_cmd) != 0) {
