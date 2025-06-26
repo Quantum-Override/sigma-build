@@ -8,7 +8,7 @@
  *
  */
 
-#include "core.h"
+#include "sbuild.h"
 #include "core/builder.h"
 #include "core/cli_parser.h"
 #include "core/loader.h"

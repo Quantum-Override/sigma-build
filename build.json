@@ -67,7 +67,7 @@
         "{CORE}/var_table.c",
         "{CORE}/loader.c",
         "{CORE}/builder.c",
-        "src/sigbuild.c",
+        "src/sbuild.c",
         "src/main.c",
         "lib/cjson/cJSON.c"
       ],
@@ -93,7 +93,7 @@
         "{CORE}/var_table.c",
         "{CORE}/loader.c",
         "{CORE}/builder.c",
-        "src/sigbuild.c",
+        "src/sbuild.c",
         "lib/cjson/cJSON.c"
       ],
       "build_dir": "{BLD_DIR}/",
@@ -110,7 +110,7 @@
         "-shared"
       ],
       "out_dir": "{LIB_DIR}/",
-      "output": "libsuild.so"
+      "output": "libsbuild.so"
     },
     {
       "name": "clean",

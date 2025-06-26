@@ -8,14 +8,14 @@
   "name": "bootstrap_build",
   "targets": [
     {
-      "name": "sigbuild",
+      "name": "sbuild",
       "type": "executable",
       "sources": [
         "{core_src}/cli_parser.c",
         "{core_src}/var_table.c",
         "{core_src}/loader.c",
         "{core_src}/builder.c",
-        "src/sigbuild.c",
+        "src/sbuild.c",
         "src/main.c",
         "lib/cjson/cJSON.c"
       ],
@@ -39,5 +39,5 @@
   "log_file": "logs/bootstrap.log",
   "incremental_build": false,
   "parallel_jobs": 1,
-  "default_target": "sigbuild"
+  "default_target": "sbuild"
 }

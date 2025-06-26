@@ -69,7 +69,7 @@
          "group": "build"
       },
       {
-         "label": "build sigbuild",
+         "label": "build sbuild",
          "type": "shell",
          "command": "gcc",
          "args": [
@@ -77,9 +77,9 @@
             "-Wall",
             "-O0",
             "-c",
-            "src/sigbuild.c",
+            "src/sbuild.c",
             "-o",
-            "test/build/sigbuild.o",
+            "test/build/sbuild.o",
             "-Iinclude"
          ],
          "group": "build"
@@ -128,7 +128,7 @@
             "test/build/var_table.o",
             "test/build/loader.o",
             "test/build/builder.o",
-            "test/build/sigbuild.o",
+            "test/build/sbuild.o",
             "test/build/main.o",
             "test/build/cJSON.o"
          ],
@@ -141,7 +141,7 @@
             "build var_table",
             "build loader",
             "build builder",
-            "build sigbuild",
+            "build sbuild",
             "build main",
             "build cJSON"
          ],

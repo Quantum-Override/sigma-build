@@ -7,8 +7,7 @@
  *
  * This file includes standard libraries and project-specific headers.
  */
-#ifndef CORE_H
-#define CORE_H
+#pragma once
 
 #include <stdint.h>
 #include <stdio.h>
@@ -31,8 +30,10 @@ typedef struct build_context_s *BuildContext; // BuildContext is the structure t
 typedef struct build_config_s *BuildConfig;   // BuildConfig is a pointer to the build_config_s structure
 typedef struct build_target_s *BuildTarget;   // BuildTarget is a pointer to the build_target_s structure
 
-#define SB_TRUE 1
-#define SB_FALSE 0
+#define SB_TRUE 1                // Boolean true value
+#define SB_FALSE 0               // Boolean false value
+#define SB_NULL NULL             // Null pointer definition
+#define SB_VERSION "0.01.03.001" // Project version - MAJOR.MINOR.REVISION.BUILD
 
 /**
  * @brief Enumeration for log levels.
@@ -41,10 +42,9 @@ typedef struct build_target_s *BuildTarget;   // BuildTarget is a pointer to the
  *          to control the verbosity of logging output, while DebugLevel is used for
  *          controlling debug output in the code.
  */
-typedef enum {
-   LOG_NONE = 0,    // No logging
-   LOG_NORMAL = 1,  // Normal logging
-   LOG_VERBOSE = 2, // Verbose logging
+typedef enum { LOG_NONE = 0,    // No logging
+               LOG_NORMAL = 1,  // Normal logging
+               LOG_VERBOSE = 2, // Verbose logging
 } LogLevel;
 /**
  * @brief Enumeration for debug levels.
@@ -52,12 +52,11 @@ typedef enum {
  *          be enabled in the code. It is used to control the granularity of debug
  *          information printed during execution.
  */
-typedef enum {
-   DBG_DEBUG,   // Debug level logging
-   DBG_INFO,    // Info level logging
-   DBG_WARNING, // Warning level logging
-   DBG_ERROR,   // Error (non-fatal) level logging
-   DBG_FATAL,   // Fatal error level logging
+typedef enum { DBG_DEBUG,   // Debug level logging
+               DBG_INFO,    // Info level logging
+               DBG_WARNING, // Warning level logging
+               DBG_ERROR,   // Error (non-fatal) level logging
+               DBG_FATAL,   // Fatal error level logging
 } DebugLevel;
 /**
  * @brief CLI Error Codes.
@@ -66,29 +65,28 @@ typedef enum {
  *          errors that can occur during command line parsing, such as invalid
  *          arguments, missing required options, or other parsing errors.
  */
-typedef enum {
-   CLI_SUCCESS = 0, // No error
-   CLI_FAILURE = 1, // Unknown error
-   // CLI Parser Error Codes
-   CLI_ERR_PARSE_INVALID_ARG = 1001, // Invalid argument provided
-   CLI_ERR_PARSE_MISSING_OPTION,     // Required option is missing
-   CLI_ERR_PARSE_INVALID_CONFIG,     // Invalid or NULL configuration file specified
-   CLI_ERR_PARSE_MISSING_CONFIG,     // Configuration file is missing
-   CLI_ERR_PARSE_UNKNOWN_OPTION,     // Unknown option provided
-   CLI_ERR_PARSE_FAILED,             // Failed to parse command line arguments
-   // Loader Error Codes
-   LOADER_ERR_INVALID_FORMAT = 2001, // Invalid JSON format
-   LOADER_ERR_MISSING_FIELD,         // Required field is missing in JSON
-   LOADER_ERR_INVALID_FIELD,         // Invalid field in JSON
-   LOADER_ERR_UNKNOWN_FIELD,         // Unknown field in JSON
-   LOADER_ERR_INVALID_VAR,           // Invalid variable reference
-   LOADER_ERR_PARSE_FAILED,          // Failed to parse JSON
-   LOADER_ERR_FILE_NOT_FOUND,        // JSON file not found
-   LOADER_ERR_FILE_READ,             // Error reading JSON file
-   LOADER_ERR_FILE_EMPTY,            // Empty JSON file
-   LOADER_ERR_LOAD_CONFIG,           // Failed to load configuration file
-   // Builder Error Codes
-   BUILD_ERR_BUILD_TARGET = 3001, // Build target failed
+typedef enum { CLI_SUCCESS = 0, // No error
+               CLI_FAILURE = 1, // Unknown error
+               // CLI Parser Error Codes
+               CLI_ERR_PARSE_INVALID_ARG = 1001, // Invalid argument provided
+               CLI_ERR_PARSE_MISSING_OPTION,     // Required option is missing
+               CLI_ERR_PARSE_INVALID_CONFIG,     // Invalid or NULL configuration file specified
+               CLI_ERR_PARSE_MISSING_CONFIG,     // Configuration file is missing
+               CLI_ERR_PARSE_UNKNOWN_OPTION,     // Unknown option provided
+               CLI_ERR_PARSE_FAILED,             // Failed to parse command line arguments
+               // Loader Error Codes
+               LOADER_ERR_INVALID_FORMAT = 2001, // Invalid JSON format
+               LOADER_ERR_MISSING_FIELD,         // Required field is missing in JSON
+               LOADER_ERR_INVALID_FIELD,         // Invalid field in JSON
+               LOADER_ERR_UNKNOWN_FIELD,         // Unknown field in JSON
+               LOADER_ERR_INVALID_VAR,           // Invalid variable reference
+               LOADER_ERR_PARSE_FAILED,          // Failed to parse JSON
+               LOADER_ERR_FILE_NOT_FOUND,        // JSON file not found
+               LOADER_ERR_FILE_READ,             // Error reading JSON file
+               LOADER_ERR_FILE_EMPTY,            // Empty JSON file
+               LOADER_ERR_LOAD_CONFIG,           // Failed to load configuration file
+               // Builder Error Codes
+               BUILD_ERR_BUILD_TARGET = 3001, // Build target failed
 } CLIErrorCode;
 /**
  * @brief CLI options structure.
@@ -262,5 +260,3 @@ extern const IResources Resources;
  * @details This Interface is used to handle basic file operations
  */
 extern const IFiles Files;
-
-#endif // CORE_H

@@ -1,9 +1,8 @@
-Building target: build_sb
-[INFO]     Executing: gcc -Wall -Og -g3 -c -Iinclude -Ilib/cjson -o build/src_core_cli_parser.o src/core/cli_parser.c
-[INFO]     Executing: gcc -Wall -Og -g3 -c -Iinclude -Ilib/cjson -o build/src_core_var_table.o src/core/var_table.c
-[INFO]     Executing: gcc -Wall -Og -g3 -c -Iinclude -Ilib/cjson -o build/src_core_loader.o src/core/loader.c
-[INFO]     Executing: gcc -Wall -Og -g3 -c -Iinclude -Ilib/cjson -o build/src_core_builder.o src/core/builder.c
-[INFO]     Executing: gcc -Wall -Og -g3 -c -Iinclude -Ilib/cjson -o build/src_sigbuild.o src/sigbuild.c
-[INFO]     Executing: gcc -Wall -Og -g3 -c -Iinclude -Ilib/cjson -o build/src_main.o src/main.c
-[INFO]     Executing: gcc -Wall -Og -g3 -c -Iinclude -Ilib/cjson -o build/lib_cjson_cJSON.o lib/cjson/cJSON.c
-[INFO]     Executing: gcc -o bin/sbuild build/src_core_cli_parser.o build/src_core_var_table.o build/src_core_loader.o build/src_core_builder.o build/src_sigbuild.o build/src_main.o build/lib_cjson_cJSON.o 
+Building target: build_sblib
+[INFO]     Executing: gcc -Wall -O2 -c -fPIC -Iinclude -Ilib/cjson -o build/src_core_cli_parser.o src/core/cli_parser.c
+[INFO]     Executing: gcc -Wall -O2 -c -fPIC -Iinclude -Ilib/cjson -o build/src_core_var_table.o src/core/var_table.c
+[INFO]     Executing: gcc -Wall -O2 -c -fPIC -Iinclude -Ilib/cjson -o build/src_core_loader.o src/core/loader.c
+[INFO]     Executing: gcc -Wall -O2 -c -fPIC -Iinclude -Ilib/cjson -o build/src_core_builder.o src/core/builder.c
+[INFO]     Executing: gcc -Wall -O2 -c -fPIC -Iinclude -Ilib/cjson -o build/src_sbuild.o src/sbuild.c
+[INFO]     Executing: gcc -Wall -O2 -c -fPIC -Iinclude -Ilib/cjson -o build/lib_cjson_cJSON.o lib/cjson/cJSON.c
+[INFO]     Executing: gcc -shared -o lib/libsbuild.so build/src_core_cli_parser.o build/src_core_var_table.o build/src_core_loader.o build/src_core_builder.o build/src_sbuild.o build/lib_cjson_cJSON.o 
