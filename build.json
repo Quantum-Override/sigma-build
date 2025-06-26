@@ -19,7 +19,7 @@
       "sources": [
         "{STEST_SRC_DIR}/sigtest.c"
       ],
-      "build_dir": "{BUILD_DIR}",
+      "build_dir": "{BLD_DIR}",
       "compiler": "gcc",
       "compiler_flags": [
         "-Wall",
@@ -40,7 +40,7 @@
       "sources": [
         "{STEST_SRC_DIR}/sigtest_cli.c"
       ],
-      "build_dir": "{BUILD_DIR}",
+      "build_dir": "{BLD_DIR}",
       "compiler": "gcc",
       "compiler_flags": [
         "-Wall",
