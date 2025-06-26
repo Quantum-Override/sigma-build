@@ -110,7 +110,7 @@
         "-shared"
       ],
       "out_dir": "{LIB_DIR}/",
-      "output": "libsuild.so"
+      "output": "libsbuild.so"
     },
     {
       "name": "clean",
