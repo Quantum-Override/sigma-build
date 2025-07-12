@@ -1,4 +1,4 @@
-/* include/core.h: Core header file for the project
+/* include/sbuild.h: Core header file for the project
  *
  * David Boarman
  * 2025-05-25
