@@ -71,7 +71,6 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
          // Set the log level to verbose
          (*options)->is_verbose = 1; // Set log level to verbose
       } else if (strncmp(argv[i], OPT_BUILD_CONFIG, strlen(OPT_BUILD_CONFIG)) == 0) {
-         // Set the configuration file path
          if (i + 1 < argc) {
             char *arg = strdup(argv[i + 1]); // Get the next argument: `config.json[:target]`
             if (!arg) {
@@ -92,20 +91,10 @@ void cli_parse_args(int argc, char **argv, CLIOptions *options, CLIErrorCode *er
                   return;
                }
             }
-            // validate the config file path
-            FILE *file = NULL;
-            if (!(file = fopen(config_file, "r"))) {
-               free(config_file);
-               free(target_name);
-               (*options)->log_stream = stderr;
-               *error = CLI_ERR_PARSE_INVALID_CONFIG;
-               return;
-            }
-
             (*options)->config_file = config_file; // Set the configuration file path
             (*options)->target_name = target_name; // Set the target name if provided
-            fclose(file);                          // Close the file after checking
-            ++i;                                   // Move to the next argument
+
+            ++i; // Move to the next argument
          } else {
             (*options)->log_stream = stderr;       // Set log stream to stderr for error messages
             *error = CLI_ERR_PARSE_MISSING_CONFIG; // Missing value for config file option

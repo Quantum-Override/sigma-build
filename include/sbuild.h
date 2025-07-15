@@ -98,6 +98,7 @@ typedef struct cli_options_s {
    int show_help;          // Flag to indicate if help should be displayed
    int show_about;         // Flag to indicate if about information should be displayed
    string config_file;     // Path to the configuration file
+   string original_path;   // Original cwd at launch
    string target_name;     // Name of the target to build
    LogLevel log_level;     // Logging level for the application
    DebugLevel debug_level; // Debug level for the application
@@ -123,9 +124,10 @@ typedef struct build_context_s {
    LogLevel log_level;       // Current logging level
    DebugLevel debug_level;   // Current debug level
    const char *project_name; // Name of the project being built
+   string cwd;               // Current working directory for the build context
    FILE *log_stream;         // Stream for logging output
-   char *current_target;     // Name of the current target being built
-   char *config_file;        // Configuration being used
+   string current_target;    // Name of the current target being built
+   string config_file;       // Configuration being used
    BuildConfig config;       // Current Build Configuration
    object data;              // Pointer to any additional data structure
 } build_context_s;
@@ -237,8 +239,61 @@ typedef struct IResources {
  * @brief Global file interface
  */
 typedef struct IFiles {
+   /**
+    * @brief Reads the contents of a file into a buffer
+    * @param path :the path to the file to read
+    * @param out :the output buffer to store the file contents (NULL terminated)
+    * @return :the number of bytes read from the file
+    */
    size_t (*read)(const char *, char **); // Read file contents to buffer returning number of bytes read
+   /**
+    * @brief Checks if a file exists at the given path
+    * @param path :the path to the file to check
+    * @return :SB_TRUE if the file exists; otherwise, SB_FALSE
+    */
+   int (*file_exists)(const char *); // Check if a file exists at the given path
+   /**
+    * @brief Get the file's relative path
+    * @param path :the path to the file to get the relative path for
+    * @param out :the output buffer to store the relative path (NULL terminated)
+    * @return :SB_TRUE if successful; otherwise, SB_FALSE
+    */
+   int (*file_path)(const char *, string *); // Get the file's relative path
 } IFiles;
+/**
+ * @brief Global directory interface
+ */
+typedef struct IDirectories {
+   /**
+    * @brief Get the current working directory
+    * @param out :the output buffer to store the current working directory (NULL terminated)
+    */
+   void (*get_wd)(string *);
+   /**
+    * @brief Change the current working directory
+    * @param path :the path to change the current working directory to
+    * @return :SB_TRUE if successful; otherwise, SB_FALSE
+    */
+   int (*set_wd)(const char *);
+} IDirectories;
+/**
+ * @brief Global paths interface
+ */
+typedef struct IPaths {
+   /**
+    * @brief Gets the absolute path of a given relative path
+    * @param relative_path :the relative path to convert to an absolute path
+    * @param out :the output buffer to store the absolute path (NULL terminated)
+    * @return :SB_TRUE if successful; otherwise, SB_FALSE
+    */
+   int (*get_path)(const char *, string *);
+   /**
+    * @brief Gets the file name from a given path
+    * @param path :the path to extract the file name from
+    * @return :SB_TRUE if successful; otherwise, SB_FALSE
+    */
+   int (*get_file_name)(const char **); // Get the file name from a given path
+} IPaths;
 
 /**
  * @brief Global Logger Interface
@@ -260,3 +315,13 @@ extern const IResources Resources;
  * @details This Interface is used to handle basic file operations
  */
 extern const IFiles Files;
+/**
+ * @brief Global Directories Interface
+ * @details This Interface is used to handle basic directory operations
+ */
+extern const IDirectories Directories;
+/**
+ * @brief Global Paths Interface
+ * @details This Interface is used to handle basic path operations
+ */
+extern const IPaths Paths;

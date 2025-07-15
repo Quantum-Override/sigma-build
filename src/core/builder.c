@@ -33,7 +33,7 @@ int builder_build_target(BuildTarget target) {
       return builder_exec_op_target(target); // Handle operation targets separately
    }
 
-   Logger.writeln("Building target: %s", target->name);
+   Logger.writeln("Building target: %s [%s]", target->name, target->cwd);
 
    // Compile each source file
    char obj_files[2048] = "";

@@ -16,10 +16,23 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#define PATH_MAX MAX_PATH
+#else
+#include <limits.h>
+#include <unistd.h>
+#endif
+
+// Version and name definitions
 #define SIGMABUILD_VERSION "0.00.03.001"
 #define SIGMABUILD_NAME "Sigma.Build"
+
+// Define a maximum path length for file operations
+#define PATH_MAX 4096
 
 CLIState cli_state = NULL;   // Global variable to hold the current CLI state
 BuildContext context = NULL; // Global variable to hold the current build context
@@ -51,6 +64,16 @@ void resources_dispose_target(BuildTarget);
 
 // Files declarations
 size_t files_read_file(const char *, char **);
+int files_file_exists(const char *);
+int files_get_file_path(const char *path, string *out);
+
+// Directories declarations
+void directories_get_wd(string *);
+int directories_set_wd(const char *);
+
+// Paths declarations
+int paths_get_absolute_path(const char *, string *);
+int paths_get_file_name(const char **);
 
 // For dynamic log level annotation
 static const char *DEBUG_LEVELS[] = {
@@ -103,10 +126,36 @@ void cli_init(int argc, char **args) {
       logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Error parsing command line arguments: %s\n",
                      cli_get_err_msg(cli_state->error));
       exit(EXIT_FAILURE);
+   } else {
+      // validate config_file
+      if (!Files.file_exists(cli_state->options->config_file)) {
+         logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Configuration file does not exist: %s\n",
+                        cli_state->options->config_file);
+         exit(EXIT_FAILURE);
+      }
+      string cfg_dir = NULL;
+      files_get_file_path(cli_state->options->config_file, &cfg_dir);
+
+      context->config_file = cli_state->options->config_file; // Set the config file in the context
+      paths_get_file_name((const char **)&context->config_file);
+
+      // check if cwd and the config file paths are the same
+      if (strcmp(cli_state->options->original_path, cfg_dir) != 0) {
+         // since the paths don't match, we need to change the cwd to match the config file path
+         if (!directories_set_wd(cfg_dir)) {
+            free(cfg_dir);
+            cli_state->options->log_stream = stderr;         // Set log stream to stderr for error messages
+            cli_state->error = CLI_ERR_PARSE_INVALID_CONFIG; // Failed to change directory to config file path
+            return;
+         }
+         free(cli_state->options->original_path);     // Free the original path
+         cli_state->options->original_path = cfg_dir; // Set the original path to the config file path
+      }
    }
    // Update build context with the parsed options
    context->log_level = cli_state->options->log_level;     // Set log level from options
    context->debug_level = cli_state->options->debug_level; // Set debug level from options
+   context->cwd = cli_state->options->original_path;       // Set current working directory from options
    context->log_stream = cli_state->options->log_stream;   // Set log stream based on verbosity
    context->project_name = SIGMABUILD_NAME;                // Set default project name
 }
@@ -147,11 +196,12 @@ void cli_init_state(int argc, char **args) {
    // Initialize CLI options with default values
    cli_state->options->show_help = 0;
    cli_state->options->show_about = 0;
-   cli_state->options->log_level = LOG_NORMAL; // Default log level
-   cli_state->options->debug_level = DBG_INFO; // Default debug level
-   cli_state->options->is_verbose = 0;         // Verbose logging is off by default
-   cli_state->options->log_stream = stdout;    // Default log stream is stdout
-   cli_state->error = CLI_SUCCESS;             // Initialize error code to success
+   cli_state->options->log_level = LOG_NORMAL;             // Default log level
+   cli_state->options->debug_level = DBG_INFO;             // Default debug level
+   cli_state->options->is_verbose = 0;                     // Verbose logging is off by default
+   cli_state->options->log_stream = stdout;                // Default log stream is stdout
+   cli_state->error = CLI_SUCCESS;                         // Initialize error code to success
+   directories_get_wd(&cli_state->options->original_path); // Get the original working directory
 }
 // Load the configuration file specified in the command line options
 int cli_load_config(void) {
@@ -226,6 +276,14 @@ static void cli_cleanup(void) {
       return;
    }
 
+   // set the working directory back to the original path
+   if (cli_state && cli_state->options && cli_state->options->original_path) {
+      if (!directories_set_wd(cli_state->options->original_path)) {
+         logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to change directory back to original path: %s\n",
+                        cli_state->options->original_path);
+      }
+   }
+
    if (context) {
       // Free any resources allocated in the context
       if (context->config) {
@@ -251,6 +309,9 @@ static void cli_cleanup(void) {
             free(cli_state->options->target_name);
             cli_state->options->target_name = NULL;
          }
+         free(cli_state->options->original_path);  // Free the original path string
+         cli_state->options->original_path = NULL; // Set to NULL after freeing
+
          free(cli_state->options);
          cli_state->options = NULL; // Set to NULL after freeing
       }
@@ -457,6 +518,7 @@ void resources_dispose_config(BuildConfig config) {
 
    free(config->name);
    free(config->log_file);
+   free(config->cwd);
    for (char **var = config->variables; var && *var; var++)
       free(*var);
    free(config->variables);
@@ -475,6 +537,7 @@ void resources_dispose_target(BuildTarget target) {
 
    free(target->name);
    free(target->type);
+   free(target->cwd);
    for (char **src = target->sources; src && *src; src++)
       free(*src);
    free(target->sources);
@@ -537,6 +600,163 @@ size_t files_read_file(const char *filename, char **buffer) {
 
    return size;
 }
+// Function to determine if a file exists
+int files_file_exists(const char *filename) {
+   if (!filename) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid file existence check: NULL filename.\n");
+      return SB_FALSE; // Return 0 if filename is NULL
+   }
+
+   FILE *file = fopen(filename, "rb");
+   if (!file) {
+      return SB_FALSE; // File does not exist
+   }
+
+   fclose(file);
+   return SB_TRUE; // File exists
+}
+// Function to get the relative path of a file
+int files_get_file_path(const char *path, string *out) {
+   if (!path || !out) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid file path request: NULL path or output buffer.\n");
+      return SB_FALSE;
+   }
+
+   // Find the last '/' in the path
+   const char *last_slash = strrchr(path, '/');
+
+   if (last_slash) {
+      // Calculate length of directory portion (including the '/')
+      size_t dir_len = last_slash - path + 1;
+
+      // Allocate and copy the directory portion
+      *out = malloc(dir_len + 1);
+      if (!*out) {
+         logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Memory allocation failed for file path.\n");
+         return SB_FALSE;
+      }
+
+      strncpy(*out, path, dir_len);
+      (*out)[dir_len] = '\0';
+
+      // Ensure it starts with './' if it's a relative path
+      if (strncmp(*out, "./", 2) != 0 && strncmp(*out, "/", 1) != 0) {
+         char *temp = malloc(strlen(*out) + 3);
+         if (!temp) {
+            free(*out);
+            *out = NULL;
+            return SB_FALSE;
+         }
+         strcpy(temp, "./");
+         strcat(temp, *out);
+         free(*out);
+         *out = temp;
+      }
+   } else {
+      // No directory component, just return "./"
+      *out = strdup("./");
+   }
+
+   return *out ? SB_TRUE : SB_FALSE;
+}
+
+/* Directories functions */
+// This function gets the current working directory
+void directories_get_wd(string *out) {
+   if (!out) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid directory request: NULL output buffer.\n");
+      return;
+   }
+
+#ifdef _WIN32
+   char *cwd = _getcwd(NULL, 0); // Windows version
+   const char sep = '\\';
+#else
+   char *cwd = getcwd(NULL, 0); // POSIX version
+   const char sep = '/';
+#endif
+
+   if (!cwd) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to get current working directory.\n");
+      return;
+   }
+
+   // Check if we need to append separator
+   size_t len = strlen(cwd);
+   if (len == 0 || cwd[len - 1] != sep) {
+      // Reallocate with space for separator
+      char *tmp = realloc(cwd, len + 2); // +1 sep, +1 null
+      if (!tmp) {
+         logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Memory allocation failed.\n");
+         free(cwd);
+         return;
+      }
+      tmp[len] = sep;      // Add separator
+      tmp[len + 1] = '\0'; // Add null terminator
+      cwd = tmp;
+   }
+
+   *out = cwd; // Make a copy (caller must free)
+}
+// This function sets the current working directory to the specified path
+int directories_set_wd(const char *path) {
+   if (!path) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid directory request: NULL path.\n");
+      return SB_FALSE; // Return false if path is NULL
+   }
+
+   if (chdir(path) != 0) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Failed to change directory: %s\n", path);
+      return SB_FALSE; // Return false if chdir fails
+   }
+
+   return SB_TRUE; // Return true if successful
+}
+
+/* Paths functions */
+// This function gets the absolute path of a file or directory
+int paths_get_absolute_path(const char *rel_path, char **abs_path) {
+   if (!rel_path || !abs_path) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid path request: NULL relative path or output buffer.\n");
+      return SB_FALSE; // Return false if rel_path or abs_path is NULL
+   }
+
+   char *cwd = NULL;
+   directories_get_wd(&cwd); // Get the current working directory
+   if (!cwd) {
+      return SB_FALSE; // Return false if cwd could not be obtained
+   }
+
+   size_t len = strlen(cwd) + strlen(rel_path) + 2; // +1 for separator, +1 for null terminator
+   *abs_path = malloc(len);
+   if (!*abs_path) {
+      free(cwd);
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Memory allocation failed for absolute path.\n");
+      return SB_FALSE; // Return false if memory allocation fails
+   }
+
+   snprintf(*abs_path, len, "%s/%s", cwd, rel_path); // Construct the absolute path
+   free(cwd);                                        // Free the cwd buffer
+
+   return SB_TRUE; // Return true if successful
+}
+// Function to get the file name from a given path
+int paths_get_file_name(const char **path) {
+   if (!path || !*path) {
+      logger_fdebugf(stderr, LOG_NORMAL, DBG_ERROR, "Invalid path request: NULL path.\n");
+      return SB_FALSE;
+   }
+
+   const char *file_name = strrchr(*path, '/');
+   if (file_name) {
+      file_name++;       // Move past the '/'
+      *path = file_name; // Modify the pointer to point to filename
+   }
+   // If no '/' found, leave path as is (it's already just the filename)
+
+   logger_fdebugf(stderr, LOG_NORMAL, DBG_INFO, "Extracted file name: %s\n", *path);
+   return SB_TRUE;
+}
 
 // Global Logger Interface
 const ILogger Logger = {
@@ -563,4 +783,16 @@ const IResources Resources = {
 // Global Files Interface
 const IFiles Files = {
     .read = files_read_file, // No file reading function defined
+    .file_exists = files_file_exists,
+    .file_path = files_get_file_path,
+};
+// Global Directories Interface
+const IDirectories Directories = {
+    .get_wd = directories_get_wd,
+    .set_wd = directories_set_wd,
+};
+// Global Paths Interface
+const IPaths Paths = {
+    .get_path = paths_get_absolute_path,  // Get the absolute path of a file or directory
+    .get_file_name = paths_get_file_name, // Get the file name from a given
 };

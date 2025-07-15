@@ -52,6 +52,37 @@ static int loader_load_config(const char *filename, BuildConfig *config) {
    }
 
    cJSON *name = cJSON_GetObjectItemCaseSensitive(json, CONFIG_FIELD_NAME);
+   cJSON *dir = cJSON_GetObjectItemCaseSensitive(json, CONFIG_FIELD_DIR);
+   // If dir is not specified, use the current working directory
+   string cwd = NULL;
+   if (!cJSON_IsString(dir)) {
+      Directories.get_wd(&cwd);
+      if (!cwd) {
+         Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
+                      "Failed to get current working directory.\n");
+         cJSON_Delete(json);
+         goto loadExit;
+      }
+   } else {
+      string raw_dir = strdup(dir->valuestring);
+      if (!raw_dir) {
+         Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
+                      "Failed to allocate memory for working directory.\n");
+         cJSON_Delete(json);
+         goto loadExit;
+      }
+      cwd = resolve_vars(raw_dir);
+      free(raw_dir);
+      if (!cwd) {
+         Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
+                      "Failed to resolve working directory: %s\n", dir->valuestring);
+         cJSON_Delete(json);
+         goto loadExit;
+      }
+   }
+   (*config)->cwd = strdup(cwd); // Set the current working directory
+   free(cwd);                    // Free the raw directory string after resolving
+
    cJSON *log_file = cJSON_GetObjectItemCaseSensitive(json, CONFIG_FIELD_LOG_FILE);
    cJSON *targets = cJSON_GetObjectItemCaseSensitive(json, CONFIG_FIELD_TARGETS);
    cJSON *variables = cJSON_GetObjectItemCaseSensitive(json, CONFIG_FIELD_VARIABLES);
@@ -97,6 +128,11 @@ static int loader_load_config(const char *filename, BuildConfig *config) {
          VarTable.dispose();
 
          goto loadExit;
+      }
+
+      // we can check the target for a NULL cwd here; if NULL, assign context cwd
+      if (!(*config)->targets[i]->cwd) {
+         (*config)->targets[i]->cwd = strdup((*config)->cwd);
       }
    }
    (*config)->targets[target_count] = NULL;
@@ -145,10 +181,30 @@ static BuildTarget load_target(cJSON *target_json) {
 
    // Initialize - no need for NULL assignments since Resources.alloc uses calloc
    cJSON *name = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_NAME);
-   cJSON *type = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_TYPE);
-
    if (!cJSON_IsString(name)) goto fail;
+   cJSON *type = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_TYPE);
    if (!cJSON_IsString(type)) goto fail;
+
+   cJSON *dir = cJSON_GetObjectItemCaseSensitive(target_json, CONFIG_TARGET_DIR);
+   // if we have a dir, resolve it
+   if (cJSON_IsString(dir)) {
+      string raw_dir = strdup(dir->valuestring);
+      if (!raw_dir) {
+         Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
+                      "Failed to allocate memory for working directory.\n");
+         goto fail;
+      }
+      target->cwd = resolve_vars(raw_dir);
+      free(raw_dir);
+      if (!target->cwd) {
+         Logger.debug(stderr, LOG_NORMAL, DBG_ERROR,
+                      "Failed to resolve working directory: %s\n", dir->valuestring);
+         goto fail;
+      }
+   } else {
+      // NULL is fine, it will use the config's cwd
+      target->cwd = NULL;
+   }
 
    target->name = strdup(name->valuestring);
    target->type = strdup(type->valuestring);

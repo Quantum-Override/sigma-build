@@ -2,7 +2,34 @@
    "version": "0.2.0",
    "configurations": [
       {
-         "name": "Debug sigma.build",
+         "name": ".build exe",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/bin/sbuild",
+         "args": [
+            // "--about",
+            // "-v"
+            "--build",
+            "build.json:sbuild_exe",
+            "--log=2"
+         ],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "externalConsole": false,
+         "MIMode": "gdb",
+         "setupCommands": [
+            {
+               "description": "Enable pretty-printing for gdb",
+               "text": "-enable-pretty-printing",
+               "ignoreFailures": true
+            }
+         ],
+         // "preLaunchTask": "link",
+         "miDebuggerPath": "/usr/bin/gdb"
+      },
+      {
+         "name": "Debug .build exe",
          "type": "cppdbg",
          "request": "launch",
          "program": "${workspaceFolder}/test/bin/sbuild",
@@ -10,7 +37,34 @@
             // "--about",
             // "-v"
             "--build",
-            "build.json:build_sblib",
+            "build.json:dbg_sbuild",
+            "--log=2"
+         ],
+         "stopAtEntry": false,
+         "cwd": "${workspaceFolder}",
+         "environment": [],
+         "externalConsole": false,
+         "MIMode": "gdb",
+         "setupCommands": [
+            {
+               "description": "Enable pretty-printing for gdb",
+               "text": "-enable-pretty-printing",
+               "ignoreFailures": true
+            }
+         ],
+         "preLaunchTask": "link",
+         "miDebuggerPath": "/usr/bin/gdb"
+      },
+      {
+         "name": "Debug sigma.test",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceFolder}/bin/sbuild",
+         "args": [
+            // "--about",
+            // "-v"
+            "--build",
+            "./../sigma-test/build.json:libstest",
             "--log=2"
          ],
          "stopAtEntry": false,

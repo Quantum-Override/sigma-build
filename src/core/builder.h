@@ -20,6 +20,7 @@
 typedef struct build_target_s {
    string name;      // Name of the build target
    string type;      // Type of the build target (e.g., executable, library)
+   string cwd;       // Current working directory for the build target
    string *sources;  // Array of source files for the build targets
    string build_dir; // Directory where the build output will be placed
    string out_dir;   // Directory where the final output will be placed (optional - if NULL, will use build_dir)
@@ -32,6 +33,7 @@ typedef struct build_target_s {
 
 typedef struct build_config_s {
    string name;           // Name of the build configuration
+   string cwd;            // Current working directory for the build configuration
    string log_file;       // Log file for the build configuration
    BuildTarget *targets;  // Array of build targets for the configuration
    string *variables;     // Array of key-value pairs for configuration variables

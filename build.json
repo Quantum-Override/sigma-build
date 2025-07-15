@@ -1,79 +1,106 @@
 {
   "vars": {
+    "ROOT": "./",
     "CORE": "src/core",
-    "SRC_DIR": "src",
-    "INC_DIR": "include",
-    "BLD_DIR": "build",
-    "BIN_DIR": "bin",
-    "LOG_DIR": "logs",
-    "LIB_DIR": "lib",
-    "STEST_SRC_DIR": "~/repos/sigma/sigma-test/src",
-    "STEST_INC_DIR": "~/repos/sigma/sigma-test/include"
+    "SRC": "src",
+    "INCL": "include",
+    "BUILD": "build",
+    "BIN": "bin",
+    "LOGS": "logs",
+    "LIB": "lib",
+    "CJSON": "lib/cjson"
   },
   "name": "Sigma.Build",
-  "log_file": "{LOG_DIR}/sigma_build.log",
+  "log": "{LOGS}/sigma_build.log",
   "targets": [
     {
       "name": "libsigtest",
       "type": "lib",
+      "dir": "{ROOT}/sigma-test/",
       "sources": [
-        "{STEST_SRC_DIR}/sigtest.c"
+        "{SRC}/sigtest.c"
       ],
-      "build_dir": "{BLD_DIR}",
-      "compiler": "gcc",
-      "compiler_flags": [
+      "build_dir": "{BUILD}/",
+      "cc": "gcc",
+      "c_flags": [
         "-Wall",
         "-g",
         "-fPIC",
-        "-I{INCLUDE_DIR}",
+        "-I{INCL}",
         "-DSIGTEST_TEST"
       ],
-      "linker_flags": [
+      "ld_flags": [
         "-shared"
       ],
-      "out_dir": "{LIB_DIR}",
+      "out_dir": "{LIB}/",
       "output": "libstest.so"
     },
     {
       "name": "sigtest_cli",
       "type": "exe",
+      "dir": "{ROOT}/sigma-test/",
       "sources": [
-        "{STEST_SRC_DIR}/sigtest_cli.c"
+        "{SRC}/sigtest_cli.c"
       ],
-      "build_dir": "{BLD_DIR}",
-      "compiler": "gcc",
-      "compiler_flags": [
+      "build_dir": "{BUILD}",
+      "cc": "gcc",
+      "c_flags": [
         "-Wall",
         "-g",
         "-fPIC",
-        "-I{INCLUDE_DIR}"
+        "-I{INCL}"
       ],
-      "linker_flags": [
+      "ld_flags": [
         "-g",
-        "-L{LIB_DIR}",
+        "-L{LIB}",
         "-lsigtest",
-        "-Wl,-rpath,{LIB_DIR}"
+        "-Wl,-rpath,{LIB}"
       ],
       "dependencies": [
         "libsigtest"
       ],
-      "out_dir": "{BIN_DIR}"
+      "out_dir": "{BIN}"
     },
     {
-      "name": "build_sb",
+      "name": "sbuild_exe",
       "type": "exe",
       "sources": [
         "{CORE}/cli_parser.c",
         "{CORE}/var_table.c",
         "{CORE}/loader.c",
         "{CORE}/builder.c",
-        "src/sbuild.c",
-        "src/main.c",
-        "lib/cjson/cJSON.c"
+        "{SRC}/sbuild.c",
+        "{SRC}/main.c",
+        "{CJSON}/cJSON.c"
       ],
-      "build_dir": "{BLD_DIR}/",
-      "compiler": "gcc",
-      "compiler_flags": [
+      "build_dir": "{BUILD}/",
+      "cc": "gcc",
+      "c_flags": [
+        "-Wall",
+        "-O2",
+        "-c",
+        "-Iinclude",
+        "-Ilib/cjson"
+      ],
+      "ld_flags": [],
+      "out_dir": "{BIN}/",
+      "output": "sbuild"
+    },
+    {
+      "name": "dbg_sbuild",
+      "type": "exe",
+      "sources": [
+        "{CORE}/cli_parser.c",
+        "{CORE}/var_table.c",
+        "{CORE}/loader.c",
+        "{CORE}/builder.c",
+        "{SRC}/sbuild.c",
+        "{SRC}/main.c",
+        "{CJSON}/cJSON.c"
+      ],
+      "build_dir": "{BUILD}/",
+      "cc": "gcc",
+      "c_flags": [
         "-Wall",
         "-Og",
         "-g3",
@@ -81,35 +108,35 @@
         "-Iinclude",
         "-Ilib/cjson"
       ],
-      "linker_flags": [],
-      "out_dir": "{BIN_DIR}/",
+      "ld_flags": [],
+      "out_dir": "{BIN}/",
       "output": "sbuild"
     },
     {
-      "name": "build_sblib",
+      "name": "sbuild_lib",
       "type": "exe",
       "sources": [
         "{CORE}/cli_parser.c",
         "{CORE}/var_table.c",
         "{CORE}/loader.c",
         "{CORE}/builder.c",
-        "src/sbuild.c",
-        "lib/cjson/cJSON.c"
+        "{SRC}/sbuild.c",
+        "{CJSON}/cJSON.c"
       ],
-      "build_dir": "{BLD_DIR}/",
-      "compiler": "gcc",
-      "compiler_flags": [
+      "build_dir": "{BUILD}/",
+      "cc": "gcc",
+      "c_flags": [
         "-Wall",
         "-O2",
         "-c",
         "-fPIC",
-        "-Iinclude",
-        "-Ilib/cjson"
+        "-I{INCL}",
+        "-I{CJSON}"
       ],
-      "linker_flags": [
+      "ld_flags": [
         "-shared"
       ],
-      "out_dir": "{LIB_DIR}/",
+      "out_dir": "{LIB}/",
       "output": "libsbuild.so"
     },
     {
@@ -117,10 +144,10 @@
       "type": "op",
       "commands": {
         "linux": [
-          "rm {BLD_DIR}/*"
+          "rm {BUILD}/*"
         ],
         "windows": [
-          "del {BLD_DIR}\\*"
+          "del {BUILD}\\*"
         ]
       }
     },
@@ -129,10 +156,10 @@
       "type": "op",
       "commands": {
         "linux": [
-          "valgrind --leak-check=full --track-origins=yes --error-exitcode=1 --log-file={LOG_DIR}/mem_check.log ./{BIN_DIR}/sbuild --build build.json:build_sb --log=2"
+          "valgrind --leak-check=full --track-origins=yes --error-exitcode=1 --log-file={LOGS}/mem_check.log ./test/bin/sbuild --build build.json:build_sb --log=2 --dbug=0"
         ],
         "windows": [
-          "wsl valgrind --leak-check=full --track-origins=yes --error-exitcode=1 --log-file={LOG_DIR}/mem_check.log ./{BIN_DIR}/sbuild.exe --build build.json:build_sb --log=2"
+          "wsl valgrind --leak-check=full --track-origins=yes --error-exitcode=1 --log-file={LOGS}/mem_check.log ./test/bin/sbuild.exe --build build.json:build_sb --log=2 --dbug=0"
         ]
       }
     }
